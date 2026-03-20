@@ -1,8 +1,8 @@
 package com.dartsapp.data.model
 
 data class DartScore(
-    val field: DartField,
+    val dartField: DartField,
     val multiplier: ScoreMultiplier
 ) {
-    val value: Int get() = field.baseValue * multiplier.value
+    val value: Int get() = dartField.baseValue * multiplier.value
 }
