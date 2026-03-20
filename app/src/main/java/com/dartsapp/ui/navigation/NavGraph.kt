@@ -48,7 +48,7 @@ fun DartsNavGraph(navController: NavHostController) {
                 }
             }
 
-            GameSetupScreen(viewModel = viewModel)
+            GameSetupScreen(viewModel = viewModel, onBack = { navController.popBackStack() })
         }
 
         composable(
@@ -59,6 +59,11 @@ fun DartsNavGraph(navController: NavHostController) {
                 onGameOver = { gameId ->
                     navController.navigate(Screen.GameFinish.createRoute(gameId)) {
                         popUpTo(Screen.Game.route) { inclusive = true }
+                    }
+                },
+                onAbandonGame = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Home.route) { inclusive = true }
                     }
                 }
             )

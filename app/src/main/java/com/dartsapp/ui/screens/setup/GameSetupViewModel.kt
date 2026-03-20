@@ -30,10 +30,10 @@ class GameSetupViewModel @Inject constructor(
     private val _selectedPlayerIds = MutableStateFlow<List<Long>>(emptyList())
     val selectedPlayerIds: StateFlow<List<Long>> = _selectedPlayerIds.asStateFlow()
 
-    private val _startingScore = MutableStateFlow(501)
+    private val _startingScore = MutableStateFlow(101)
     val startingScore: StateFlow<Int> = _startingScore.asStateFlow()
 
-    private val _closeCondition = MutableStateFlow(CloseCondition.DOUBLE_OUT)
+    private val _closeCondition = MutableStateFlow(CloseCondition.SINGLE_OUT)
     val closeCondition: StateFlow<CloseCondition> = _closeCondition.asStateFlow()
 
     private val _startedGameId = MutableStateFlow<Long?>(null)

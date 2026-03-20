@@ -1,3 +1,7 @@
 <resources>
-    <style name="Theme.DartsApp" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.DartsApp" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">#0D0D1A</item>
+        <item name="android:statusBarColor">#0D0D1A</item>
+        <item name="android:navigationBarColor">#0D0D1A</item>
+    </style>
 </resources>
