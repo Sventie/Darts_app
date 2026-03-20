@@ -48,7 +48,7 @@ fun DartsNavGraph(navController: NavHostController) {
                 }
             }
 
-            GameSetupScreen(viewModel = viewModel)
+            GameSetupScreen(viewModel = viewModel, onBack = { navController.popBackStack() })
         }
 
         composable(

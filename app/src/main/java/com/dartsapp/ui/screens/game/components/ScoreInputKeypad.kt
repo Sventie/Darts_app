@@ -79,6 +79,7 @@ fun ScoreInputKeypad(
                                 scoreValue = number * effectiveMultiplier.value
                             )
                         )
+                        selectedMultiplier = ScoreMultiplier.SINGLE
                     },
                     modifier = Modifier.padding(2.dp),
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
@@ -99,17 +100,20 @@ fun ScoreInputKeypad(
             // Miss
             OutlinedButton(onClick = {
                 onDartEntered(DartInput(field = 0, multiplier = ScoreMultiplier.SINGLE, scoreValue = 0))
+                selectedMultiplier = ScoreMultiplier.SINGLE
             }) { Text("Miss") }
 
             // Bull (25 single/double only)
             OutlinedButton(onClick = {
                 val mult = if (selectedMultiplier == ScoreMultiplier.TRIPLE) ScoreMultiplier.DOUBLE else selectedMultiplier
                 onDartEntered(DartInput(field = 25, multiplier = mult, scoreValue = 25 * mult.value))
+                selectedMultiplier = ScoreMultiplier.SINGLE
             }) { Text("Bull") }
 
             // Bullseye (50 = double bull)
             OutlinedButton(onClick = {
                 onDartEntered(DartInput(field = 50, multiplier = ScoreMultiplier.SINGLE, scoreValue = 50))
+                selectedMultiplier = ScoreMultiplier.SINGLE
             }) { Text("Bullseye") }
 
             // Undo

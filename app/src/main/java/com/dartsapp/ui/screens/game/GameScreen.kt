@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -20,7 +21,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.dartsapp.ui.screens.game.components.BustDialog
@@ -83,20 +87,41 @@ fun GameScreen(
                     }
 
                     Spacer(modifier = Modifier.height(8.dp))
+                    HorizontalDivider()
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                    // Round info
-                    Text(
-                        text = "Round ${state.activeGame.roundNumber}  |  " +
-                            "Darts: ${state.currentRoundDarts.joinToString("  ") { it.scoreValue.toString() }}",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Text(
-                        text = "Total this round: ${state.roundTotal}  →  Projected: ${state.projectedScore}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if (state.isBust) MaterialTheme.colorScheme.error
-                        else MaterialTheme.colorScheme.onSurface
-                    )
+                    // Round info – enlarged and centered
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "Round ${state.activeGame.roundNumber}",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        val dartsText = if (state.currentRoundDarts.isEmpty()) "–  –  –"
+                            else state.currentRoundDarts.joinToString("   ") { it.scoreValue.toString() }
+                        Text(
+                            text = dartsText,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Total: ${state.roundTotal}   |   Projected: ${state.projectedScore}",
+                            style = MaterialTheme.typography.titleMedium,
+                            textAlign = TextAlign.Center,
+                            color = if (state.isBust) MaterialTheme.colorScheme.error
+                            else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
 
+                    Spacer(modifier = Modifier.height(8.dp))
+                    HorizontalDivider()
                     Spacer(modifier = Modifier.height(8.dp))
 
                     ScoreInputKeypad(
