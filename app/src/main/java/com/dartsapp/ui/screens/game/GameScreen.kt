@@ -1,5 +1,6 @@
 package com.dartsapp.ui.screens.game
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
@@ -105,48 +107,107 @@ fun GameScreen(
                 Text("Loading...", modifier = Modifier.padding(padding).padding(16.dp))
             }
             is GameUiState.Playing -> {
-                Row(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding)
-                        .padding(horizontal = 8.dp)
-                ) {
-                    // ── Left: input + round info (70%) ────────────────────
+                val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+
+                // Shared composables extracted as lambdas to avoid duplication
+                val roundInfo: @Composable () -> Unit = {
                     Column(
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .weight(0.7f)
-                            .padding(end = 8.dp)
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        // Round info
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = "Round ${state.activeGame.roundNumber}",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                textAlign = TextAlign.Center
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            val dartsText = if (state.currentRoundDarts.isEmpty()) "–  –  –"
-                                else state.currentRoundDarts.joinToString("   ") { it.scoreValue.toString() }
-                            Text(
-                                text = dartsText,
-                                style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.SemiBold,
-                                textAlign = TextAlign.Center
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "Total: ${state.roundTotal}   |   Projected: ${state.projectedScore}",
-                                style = MaterialTheme.typography.bodyMedium,
-                                textAlign = TextAlign.Center,
-                                color = if (state.isBust) MaterialTheme.colorScheme.error
-                                else MaterialTheme.colorScheme.onSurface
+                        Text(
+                            text = "Round ${state.activeGame.roundNumber}",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        val dartsText = if (state.currentRoundDarts.isEmpty()) "–  –  –"
+                            else state.currentRoundDarts.joinToString("   ") { it.scoreValue.toString() }
+                        Text(
+                            text = dartsText,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Total: ${state.roundTotal}   |   Projected: ${state.projectedScore}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            textAlign = TextAlign.Center,
+                            color = if (state.isBust) MaterialTheme.colorScheme.error
+                            else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+
+                val playerList: @Composable (Modifier) -> Unit = { listModifier ->
+                    LazyColumn(modifier = listModifier) {
+                        items(state.activeGame.players.indices.toList()) { idx ->
+                            val player = state.activeGame.players[idx]
+                            PlayerScoreCard(
+                                player = player,
+                                isCurrentPlayer = idx == state.activeGame.currentPlayerIndex,
+                                modifier = Modifier.padding(vertical = 4.dp)
                             )
                         }
+                    }
+                }
+
+                if (isLandscape) {
+                    // ── Landscape: input left (70%) | scores right (30%) ──
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(padding)
+                            .padding(horizontal = 8.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .weight(0.7f)
+                                .padding(end = 8.dp)
+                        ) {
+                            roundInfo()
+                            Spacer(modifier = Modifier.height(8.dp))
+                            HorizontalDivider()
+                            Spacer(modifier = Modifier.height(8.dp))
+                            ScoreInputKeypad(
+                                dartsEntered = state.currentRoundDarts.size,
+                                onDartEntered = viewModel::onDartEntered,
+                                onUndo = viewModel::onUndoLastDart,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+
+                        VerticalDivider(modifier = Modifier.fillMaxHeight().padding(vertical = 8.dp))
+
+                        playerList(
+                            Modifier
+                                .fillMaxHeight()
+                                .weight(0.3f)
+                                .padding(start = 8.dp)
+                        )
+                    }
+                } else {
+                    // ── Portrait: scores top, input bottom ────────────────
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(padding)
+                            .padding(horizontal = 16.dp)
+                    ) {
+                        playerList(
+                            Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+                        HorizontalDivider()
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        roundInfo()
 
                         Spacer(modifier = Modifier.height(8.dp))
                         HorizontalDivider()
@@ -158,25 +219,6 @@ fun GameScreen(
                             onUndo = viewModel::onUndoLastDart,
                             modifier = Modifier.fillMaxWidth()
                         )
-                    }
-
-                    VerticalDivider(modifier = Modifier.fillMaxHeight().padding(vertical = 8.dp))
-
-                    // ── Right: player scores (30%) ─────────────────────────
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .weight(0.3f)
-                            .padding(start = 8.dp)
-                    ) {
-                        items(state.activeGame.players.indices.toList()) { idx ->
-                            val player = state.activeGame.players[idx]
-                            PlayerScoreCard(
-                                player = player,
-                                isCurrentPlayer = idx == state.activeGame.currentPlayerIndex,
-                                modifier = Modifier.padding(vertical = 4.dp)
-                            )
-                        }
                     }
                 }
             }
