@@ -142,6 +142,7 @@ fun ScoreInputKeypad(
             InputMode.BOARD -> {
                 DartBoardInput(
                     onDartEntered = onDartEntered,
+                    dartsEntered  = dartsEntered,
                     modifier      = Modifier.fillMaxWidth(0.85f).aspectRatio(1f)
                 )
 

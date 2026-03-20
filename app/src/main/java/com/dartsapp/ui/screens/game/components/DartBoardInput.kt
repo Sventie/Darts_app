@@ -2,7 +2,9 @@ package com.dartsapp.ui.screens.game.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -49,9 +51,15 @@ private val ColWire     = Color(0xFFAAAAAA)
 @Composable
 fun DartBoardInput(
     onDartEntered: (DartInput) -> Unit,
+    dartsEntered: Int,
     modifier: Modifier = Modifier
 ) {
     val textMeasurer = rememberTextMeasurer()
+    val markers = remember { mutableStateListOf<Offset>() }
+
+    LaunchedEffect(dartsEntered) {
+        if (dartsEntered == 0) markers.clear()
+    }
 
     Canvas(
         modifier = modifier
@@ -81,6 +89,7 @@ fun DartBoardInput(
                             DartInput(field, mult, field * mult.value)
                         }
                     }
+                    markers.add(offset)
                     onDartEntered(input)
                 }
             }
@@ -153,6 +162,13 @@ fun DartBoardInput(
                     labelPos.y - measured.size.height / 2f
                 )
             )
+        }
+
+        // Dart markers
+        val markerRadius = R * 0.04f
+        markers.forEach { pos ->
+            drawCircle(color = Color.Red, radius = markerRadius, center = pos)
+            drawCircle(color = Color.White, radius = markerRadius, center = pos, style = Stroke(2f))
         }
     }
 }
