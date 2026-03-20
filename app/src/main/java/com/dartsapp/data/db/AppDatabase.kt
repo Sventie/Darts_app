@@ -2,7 +2,6 @@ package com.dartsapp.data.db
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
-import androidx.room.TypeConverters
 import com.dartsapp.data.db.dao.DartThrowDao
 import com.dartsapp.data.db.dao.GameDao
 import com.dartsapp.data.db.dao.GameParticipantDao
@@ -25,7 +24,6 @@ import com.dartsapp.data.db.entity.RoundEntity
     version = 1,
     exportSchema = true
 )
-@TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun playerDao(): PlayerDao
     abstract fun gameDao(): GameDao
