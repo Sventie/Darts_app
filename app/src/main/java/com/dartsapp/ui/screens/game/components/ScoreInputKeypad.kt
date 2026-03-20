@@ -10,13 +10,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.GridOn
-import androidx.compose.material.icons.filled.RadioButtonChecked
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -54,18 +50,12 @@ fun ScoreInputKeypad(
                 selected = inputMode == InputMode.KEYPAD,
                 onClick  = { inputMode = InputMode.KEYPAD },
                 label    = { Text("Keypad") },
-                leadingIcon = {
-                    Icon(Icons.Default.GridOn, contentDescription = null)
-                },
                 modifier = Modifier.padding(end = 8.dp)
             )
             FilterChip(
                 selected = inputMode == InputMode.BOARD,
                 onClick  = { inputMode = InputMode.BOARD },
-                label    = { Text("Board") },
-                leadingIcon = {
-                    Icon(Icons.Default.RadioButtonChecked, contentDescription = null)
-                }
+                label    = { Text("Board") }
             )
         }
 
