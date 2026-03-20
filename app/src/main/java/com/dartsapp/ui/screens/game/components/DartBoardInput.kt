@@ -1,5 +1,7 @@
 package com.dartsapp.ui.screens.game.components
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.runtime.Composable
@@ -56,11 +58,20 @@ fun DartBoardInput(
     modifier: Modifier = Modifier
 ) {
     val textMeasurer = rememberTextMeasurer()
-    val markers = remember { mutableStateListOf<Offset>() }
+    val markers      = remember { mutableStateListOf<Offset>() }
+    val markersAlpha = remember { Animatable(1f) }
 
     LaunchedEffect(dartsEntered) {
-        if (dartsEntered == 0) markers.clear()
+        if (dartsEntered == 0 && markers.isNotEmpty()) {
+            markersAlpha.animateTo(0f, animationSpec = tween(durationMillis = 1000))
+            markers.clear()
+            markersAlpha.snapTo(1f)
+        } else if (dartsEntered > 0) {
+            markersAlpha.snapTo(1f)
+        }
     }
+
+    val markerAlpha = markersAlpha.value  // read in composition scope → triggers recompose
 
     Canvas(
         modifier = modifier
@@ -168,8 +179,8 @@ fun DartBoardInput(
         // Dart markers
         val markerRadius = R * 0.04f
         markers.forEach { pos ->
-            drawCircle(color = Color.Red, radius = markerRadius, center = pos)
-            drawCircle(color = Color.White, radius = markerRadius, center = pos, style = Stroke(2f))
+            drawCircle(color = Color.Red.copy(alpha = markerAlpha),   radius = markerRadius, center = pos)
+            drawCircle(color = Color.White.copy(alpha = markerAlpha), radius = markerRadius, center = pos, style = Stroke(2f))
         }
     }
 }
