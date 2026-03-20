@@ -2,8 +2,6 @@ package com.dartsapp.ui.screens.game.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -57,8 +55,6 @@ fun DartBoardInput(
 
     Canvas(
         modifier = modifier
-            .fillMaxWidth()
-            .aspectRatio(1f)
             .pointerInput(Unit) {
                 detectTapGestures { offset ->
                     val cx = size.width / 2f
