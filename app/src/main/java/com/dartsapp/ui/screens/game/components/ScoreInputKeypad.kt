@@ -54,13 +54,13 @@ fun ScoreInputKeypad(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Number grid 1-20
+        // Number grid 1-20  (4 rows × 52dp + 3 gaps × 4dp = 220dp)
         val numbers = (1..20).toList()
         LazyVerticalGrid(
             columns = GridCells.Fixed(5),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(200.dp),
+                .height(220.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
@@ -81,10 +81,12 @@ fun ScoreInputKeypad(
                         )
                         selectedMultiplier = ScoreMultiplier.SINGLE
                     },
-                    modifier = Modifier.padding(2.dp),
+                    modifier = Modifier
+                        .height(52.dp)
+                        .padding(2.dp),
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
                 ) {
-                    Text("$number", style = MaterialTheme.typography.bodySmall)
+                    Text("$number", style = MaterialTheme.typography.bodyMedium)
                 }
             }
         }

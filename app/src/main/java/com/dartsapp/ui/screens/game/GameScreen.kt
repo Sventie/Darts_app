@@ -8,11 +8,17 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -35,10 +41,12 @@ import com.dartsapp.ui.screens.game.components.ScoreInputKeypad
 @Composable
 fun GameScreen(
     onGameOver: (Long) -> Unit,
+    onAbandonGame: () -> Unit,
     viewModel: GameViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var bustInfo by remember { mutableStateOf<BustInfo?>(null) }
+    var showAbandonDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.bustEvent.collect { info ->
@@ -47,8 +55,10 @@ fun GameScreen(
     }
 
     LaunchedEffect(uiState) {
-        if (uiState is GameUiState.GameOver) {
-            onGameOver((uiState as GameUiState.GameOver).gameId)
+        when (uiState) {
+            is GameUiState.GameOver -> onGameOver((uiState as GameUiState.GameOver).gameId)
+            is GameUiState.Abandoned -> onAbandonGame()
+            else -> Unit
         }
     }
 
@@ -56,8 +66,36 @@ fun GameScreen(
         BustDialog(bustInfo = info, onDismiss = { bustInfo = null })
     }
 
+    if (showAbandonDialog) {
+        AlertDialog(
+            onDismissRequest = { showAbandonDialog = false },
+            title = { Text("Spiel abbrechen?") },
+            text = { Text("Das laufende Spiel wird beendet und nicht gewertet.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showAbandonDialog = false
+                    viewModel.abandonGame()
+                }) { Text("Abbrechen", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAbandonDialog = false }) { Text("Weiterspielen") }
+            }
+        )
+    }
+
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Darts") }) }
+        topBar = {
+            TopAppBar(
+                title = { Text("Darts") },
+                actions = {
+                    if (uiState is GameUiState.Playing) {
+                        IconButton(onClick = { showAbandonDialog = true }) {
+                            Icon(Icons.Default.Close, contentDescription = "Spiel abbrechen")
+                        }
+                    }
+                }
+            )
+        }
     ) { padding ->
         when (val state = uiState) {
             is GameUiState.Loading -> {
@@ -139,6 +177,7 @@ fun GameScreen(
                     style = MaterialTheme.typography.headlineMedium
                 )
             }
+            is GameUiState.Abandoned -> Unit
             is GameUiState.Error -> {
                 Text(
                     "Error: ${state.message}",

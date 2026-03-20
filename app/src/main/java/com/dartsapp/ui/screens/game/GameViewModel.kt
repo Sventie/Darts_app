@@ -38,6 +38,7 @@ sealed class GameUiState {
         val isBust: Boolean
     ) : GameUiState()
     data class GameOver(val gameId: Long, val winnerName: String) : GameUiState()
+    object Abandoned : GameUiState()
     data class Error(val message: String) : GameUiState()
 }
 
@@ -104,6 +105,11 @@ class GameViewModel @Inject constructor(
                 )
             }
         }
+    }
+
+    fun abandonGame() {
+        activeGameStore.remove(gameId)
+        _uiState.value = GameUiState.Abandoned
     }
 
     fun onUndoLastDart() {

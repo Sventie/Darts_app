@@ -60,6 +60,11 @@ fun DartsNavGraph(navController: NavHostController) {
                     navController.navigate(Screen.GameFinish.createRoute(gameId)) {
                         popUpTo(Screen.Game.route) { inclusive = true }
                     }
+                },
+                onAbandonGame = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Home.route) { inclusive = true }
+                    }
                 }
             )
         }
