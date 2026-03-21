@@ -178,31 +178,25 @@ fun ScoreInputKeypad(
             InputMode.BOARD -> {
                 Spacer(modifier = Modifier.height(INNER_GAP))
 
-                Box(
-                    modifier         = Modifier.fillMaxWidth().weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
+                // Board fills all remaining height; Rückgängig overlaid at bottom-end
+                Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
                     DartBoardInput(
                         onDartEntered = onDartEntered,
                         dartsEntered  = dartsEntered,
                         modifier      = Modifier
                             .fillMaxHeight()
                             .aspectRatio(1f, matchHeightConstraintsFirst = true)
+                            .align(Alignment.Center)
                     )
-                }
-
-                Spacer(modifier = Modifier.height(INNER_GAP))
-
-                Row(
-                    modifier              = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
                     Button(
                         onClick  = onUndo,
                         enabled  = canUndo,
                         shape    = BTN_CORNER,
                         colors   = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                        modifier = Modifier.height(BTN_H)
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .height(BTN_H)
+                            .padding(bottom = 4.dp)
                     ) { Text("Rückgängig") }
                 }
             }
