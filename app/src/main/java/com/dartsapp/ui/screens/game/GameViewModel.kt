@@ -189,11 +189,12 @@ class GameViewModel @Inject constructor(
             roundNumber = last.roundNumber
         )
 
-        // Rebuild state with the original darts pre-loaded so the user can correct them
+        // Rebuild state with the last dart already removed so the single undo press
+        // immediately removes that dart rather than just switching back to the player.
         _uiState.value = buildPlayingState(
             game = restoredGame,
-            darts = last.darts,
-            lastCommittedRound = null  // only one level of cross-turn undo
+            darts = last.darts.dropLast(1),
+            lastCommittedRound = null
         )
     }
 
