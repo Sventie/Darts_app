@@ -38,11 +38,13 @@ private const val R_BULLSEYE   = 0.048f  // inner bull  (50 pts)
 private const val R_BULL       = 0.120f  // outer bull  (25 pts)
 private const val R_TRIPLE_IN  = 0.336f  // triple ring inner edge
 private const val R_TRIPLE_OUT = 0.432f  // triple ring outer edge  (96dp wide = 2.3× original)
-private const val R_DOUBLE_IN  = 0.680f  // double ring inner edge
-private const val R_DOUBLE_OUT = 0.800f  // double ring outer edge  (120dp wide = 2.9× original)
-private const val R_LABEL      = 0.920f  // number label radius
+private const val R_DOUBLE_IN      = 0.680f  // double ring inner edge
+private const val R_DOUBLE_OUT     = 0.800f  // double ring outer edge  (120dp wide = 2.9× original)
+private const val R_LABEL_RING_OUT = 0.960f  // outer edge of the dark number ring
+private const val R_LABEL          = 0.878f  // center of label ring: (0.800 + 0.956) / 2
 
-private val ColBoardBg  = Color(0xFF111111)
+private val ColBoardBg   = Color(0xFF111111)
+private val ColLabelRing = Color(0xFF0D0D0D)
 private val ColBlack    = Color(0xFF1A1A1A)
 private val ColCream    = Color(0xFFD4B483)
 private val ColRed      = Color(0xFFB22222)
@@ -99,7 +101,7 @@ fun DartBoardInput(
                     val input: DartInput = when {
                         rNorm < R_BULLSEYE -> DartInput(50, ScoreMultiplier.SINGLE, 50)
                         rNorm < R_BULL     -> DartInput(25, ScoreMultiplier.SINGLE, 25)
-                        rNorm > R_DOUBLE_OUT + 0.01f -> DartInput(0, ScoreMultiplier.SINGLE, 0)
+                        rNorm > R_DOUBLE_OUT        -> DartInput(0, ScoreMultiplier.SINGLE, 0)
                         else -> {
                             val angleDeg   = Math.toDegrees(atan2(dy.toDouble(), dx.toDouble())).toFloat()
                             val boardAngle = (angleDeg + 90f + 360f) % 360f
@@ -138,8 +140,13 @@ private fun DrawScope.drawBoard(center: Offset, R: Float, textMeasurer: androidx
     val cx = center.x
     val cy = center.y
 
-    // Dark board background circle
-    drawCircle(color = ColBoardBg, radius = R * R_DOUBLE_OUT + 6f, center = center)
+    // Dark number ring (outermost layer, behind everything else)
+    drawCircle(color = ColLabelRing, radius = R * R_LABEL_RING_OUT, center = center)
+    // Thin wire border around the label ring
+    drawCircle(color = ColWire, radius = R * R_LABEL_RING_OUT, center = center, style = Stroke(2f))
+
+    // Dark board background circle (sits inside the label ring)
+    drawCircle(color = ColBoardBg, radius = R * R_DOUBLE_OUT, center = center)
 
     // 20 segments, 4 rings each
     for (i in 0 until 20) {
@@ -159,15 +166,15 @@ private fun DrawScope.drawBoard(center: Offset, R: Float, textMeasurer: androidx
     drawCircle(color = ColBull,     radius = R * R_BULL,     center = center)
     drawCircle(color = ColBullseye, radius = R * R_BULLSEYE, center = center)
 
-    // Wire: segment divider lines
+    // Wire: segment divider lines (extend into label ring)
     for (i in 0 until 20) {
         val angleRad = Math.toRadians(-90.0 + i * 18.0 - 9.0)
         val cosA = cos(angleRad).toFloat()
         val sinA = sin(angleRad).toFloat()
         drawLine(
             color       = ColWire,
-            start       = Offset(cx + R * R_BULL * cosA,       cy + R * R_BULL * sinA),
-            end         = Offset(cx + R * R_DOUBLE_OUT * cosA, cy + R * R_DOUBLE_OUT * sinA),
+            start       = Offset(cx + R * R_BULL * cosA,           cy + R * R_BULL * sinA),
+            end         = Offset(cx + R * R_LABEL_RING_OUT * cosA, cy + R * R_LABEL_RING_OUT * sinA),
             strokeWidth = 2f
         )
     }
