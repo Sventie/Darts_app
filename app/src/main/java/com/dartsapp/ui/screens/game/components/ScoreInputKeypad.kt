@@ -131,6 +131,7 @@ fun ScoreInputKeypad(
                 Spacer(modifier = Modifier.height(GROUP_GAP))
 
                 // Special buttons – directly below grid, same gap as multiplier row above
+                val isSingle = selectedMultiplier == ScoreMultiplier.SINGLE
                 Row(
                     modifier              = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -140,16 +141,17 @@ fun ScoreInputKeypad(
                             onDartEntered(DartInput(0, ScoreMultiplier.SINGLE, 0))
                             selectedMultiplier = ScoreMultiplier.SINGLE
                         },
+                        enabled  = isSingle,
                         shape    = BTN_CORNER,
                         modifier = Modifier.weight(1f).height(BTN_H)
                     ) { Text("Daneben") }
 
                     OutlinedButton(
                         onClick  = {
-                            val mult = if (selectedMultiplier == ScoreMultiplier.TRIPLE) ScoreMultiplier.DOUBLE else selectedMultiplier
-                            onDartEntered(DartInput(25, mult, 25 * mult.value))
+                            onDartEntered(DartInput(25, ScoreMultiplier.SINGLE, 25))
                             selectedMultiplier = ScoreMultiplier.SINGLE
                         },
+                        enabled  = isSingle,
                         shape    = BTN_CORNER,
                         modifier = Modifier.weight(1f).height(BTN_H)
                     ) { Text("Bull") }
@@ -159,6 +161,7 @@ fun ScoreInputKeypad(
                             onDartEntered(DartInput(50, ScoreMultiplier.SINGLE, 50))
                             selectedMultiplier = ScoreMultiplier.SINGLE
                         },
+                        enabled  = isSingle,
                         shape    = BTN_CORNER,
                         modifier = Modifier.weight(1f).height(BTN_H)
                     ) { Text("Bullseye") }
