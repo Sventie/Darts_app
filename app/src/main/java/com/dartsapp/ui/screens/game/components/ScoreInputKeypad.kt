@@ -128,13 +128,12 @@ fun ScoreInputKeypad(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(GROUP_GAP))
+                Spacer(modifier = Modifier.height(INNER_GAP))
 
-                // Special buttons row
+                // Special buttons – sit in the empty space just below the grid
                 Row(
                     modifier              = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment     = Alignment.CenterVertically
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     OutlinedButton(
                         onClick  = {
@@ -163,13 +162,21 @@ fun ScoreInputKeypad(
                         shape    = BTN_CORNER,
                         modifier = Modifier.weight(1f).height(BTN_H)
                     ) { Text("Bullseye") }
+                }
 
+                Spacer(modifier = Modifier.height(INNER_GAP))
+
+                // Rückgängig stays at the very bottom-end
+                Row(
+                    modifier              = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
                     Button(
                         onClick  = onUndo,
                         enabled  = canUndo,
                         shape    = BTN_CORNER,
                         colors   = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                        modifier = Modifier.weight(1f).height(BTN_H)
+                        modifier = Modifier.height(BTN_H)
                     ) { Text("Rückgängig") }
                 }
             }
