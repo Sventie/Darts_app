@@ -33,14 +33,14 @@ import kotlin.math.sqrt
 private val BOARD_NUMBERS = listOf(20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5)
 
 // All radii as fractions of the canvas half-width.
-// Board occupies ~83% of canvas so number labels fit around it.
-private const val R_BULLSEYE   = 0.028f  // inner bull  (50 pts)
-private const val R_BULL       = 0.072f  // outer bull  (25 pts)
-private const val R_TRIPLE_IN  = 0.432f  // triple ring inner edge
-private const val R_TRIPLE_OUT = 0.473f  // triple ring outer edge
-private const val R_DOUBLE_IN  = 0.711f  // double ring inner edge
-private const val R_DOUBLE_OUT = 0.752f  // double ring outer edge  (= board playable radius)
-private const val R_LABEL      = 0.860f  // number label radius
+// Proportions match the reference image: wider triple & double rings for easier touch.
+private const val R_BULLSEYE   = 0.048f  // inner bull  (50 pts)
+private const val R_BULL       = 0.120f  // outer bull  (25 pts)
+private const val R_TRIPLE_IN  = 0.336f  // triple ring inner edge
+private const val R_TRIPLE_OUT = 0.432f  // triple ring outer edge  (96dp wide = 2.3× original)
+private const val R_DOUBLE_IN  = 0.680f  // double ring inner edge
+private const val R_DOUBLE_OUT = 0.800f  // double ring outer edge  (120dp wide = 2.9× original)
+private const val R_LABEL      = 0.920f  // number label radius
 
 private val ColBoardBg  = Color(0xFF111111)
 private val ColBlack    = Color(0xFF1A1A1A)
