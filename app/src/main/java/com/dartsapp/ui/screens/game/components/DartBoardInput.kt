@@ -40,8 +40,8 @@ private const val R_TRIPLE_IN  = 0.336f  // triple ring inner edge
 private const val R_TRIPLE_OUT = 0.432f  // triple ring outer edge  (96dp wide = 2.3× original)
 private const val R_DOUBLE_IN      = 0.680f  // double ring inner edge
 private const val R_DOUBLE_OUT     = 0.800f  // double ring outer edge  (120dp wide = 2.9× original)
-private const val R_LABEL_RING_OUT = 0.920f  // outer edge of the dark number ring
-private const val R_LABEL          = 0.858f  // center of label ring: (0.800 + 0.916) / 2
+private const val R_LABEL_RING_OUT = 0.895f  // outer edge of the dark number ring
+private const val R_LABEL          = 0.846f  // center of label ring: (0.800 + 0.892) / 2
 
 private val ColBoardBg   = Color(0xFF111111)
 private val ColLabelRing = Color(0xFF0D0D0D)
