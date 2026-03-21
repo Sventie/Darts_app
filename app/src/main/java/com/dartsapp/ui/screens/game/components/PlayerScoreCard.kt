@@ -20,7 +20,8 @@ import com.dartsapp.domain.model.ActivePlayer
 fun PlayerScoreCard(
     player: ActivePlayer,
     isCurrentPlayer: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    displayScore: Int = player.remainingScore
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -51,7 +52,7 @@ fun PlayerScoreCard(
             }
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "${player.remainingScore}",
+                text = "$displayScore",
                 style = MaterialTheme.typography.headlineSmall
             )
         }

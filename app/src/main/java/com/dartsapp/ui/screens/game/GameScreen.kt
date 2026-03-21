@@ -176,9 +176,11 @@ fun GameScreen(
                         ) {
                             items(state.activeGame.players.indices.toList()) { idx ->
                                 val player = state.activeGame.players[idx]
+                                val isCurrent = idx == state.activeGame.currentPlayerIndex
                                 PlayerScoreCard(
                                     player = player,
-                                    isCurrentPlayer = idx == state.activeGame.currentPlayerIndex
+                                    isCurrentPlayer = isCurrent,
+                                    displayScore = if (isCurrent) state.projectedScore else player.remainingScore
                                 )
                             }
                         }
@@ -244,9 +246,11 @@ private fun GameSidePanel(
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             items(players.indices.toList()) { idx ->
+                val isCurrent = idx == state.activeGame.currentPlayerIndex
                 PlayerScoreCard(
                     player = players[idx],
-                    isCurrentPlayer = idx == state.activeGame.currentPlayerIndex
+                    isCurrentPlayer = isCurrent,
+                    displayScore = if (isCurrent) state.projectedScore else players[idx].remainingScore
                 )
             }
         }
