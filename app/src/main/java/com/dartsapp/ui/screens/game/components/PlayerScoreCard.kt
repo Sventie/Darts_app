@@ -13,6 +13,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.dartsapp.domain.model.ActivePlayer
 
@@ -23,13 +25,15 @@ fun PlayerScoreCard(
     modifier: Modifier = Modifier,
     displayScore: Int = player.remainingScore
 ) {
+    val isFinished = player.placement != null
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = if (isCurrentPlayer)
-                MaterialTheme.colorScheme.primaryContainer
-            else
-                MaterialTheme.colorScheme.surface
+            containerColor = when {
+                isFinished     -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                isCurrentPlayer -> MaterialTheme.colorScheme.primaryContainer
+                else           -> MaterialTheme.colorScheme.surface
+            }
         )
     ) {
         Row(
@@ -40,10 +44,17 @@ fun PlayerScoreCard(
                 Text(
                     text = player.playerName,
                     style = MaterialTheme.typography.bodyMedium,
-                    maxLines = 1
+                    maxLines = 1,
+                    color = if (isFinished) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                            else Color.Unspecified
                 )
-                if (isCurrentPlayer) {
-                    Text(
+                when {
+                    isFinished -> Text(
+                        text = placementLabel(player.placement!!),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                    )
+                    isCurrentPlayer -> Text(
                         text = "Du bist dran",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary
@@ -51,10 +62,33 @@ fun PlayerScoreCard(
                 }
             }
             Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "$displayScore",
-                style = MaterialTheme.typography.headlineSmall
-            )
+            if (isFinished) {
+                Text(
+                    text = placementBadge(player.placement!!),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                )
+            } else {
+                Text(
+                    text = "$displayScore",
+                    style = MaterialTheme.typography.headlineSmall
+                )
+            }
         }
     }
+}
+
+private fun placementLabel(placement: Int) = when (placement) {
+    1 -> "Gewinner"
+    2 -> "2. Platz"
+    3 -> "3. Platz"
+    else -> "$placement. Platz"
+}
+
+private fun placementBadge(placement: Int) = when (placement) {
+    1 -> "🥇"
+    2 -> "🥈"
+    3 -> "🥉"
+    else -> "$placement."
 }

@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.dartsapp.data.repository.GameRepository
 import com.dartsapp.di.ActiveGameStore
 import com.dartsapp.domain.model.ActiveGame
+import com.dartsapp.domain.model.ActivePlayer
 import com.dartsapp.domain.model.DartInput
 import com.dartsapp.domain.usecase.game.BustResult
 import com.dartsapp.domain.usecase.game.CheckBustUseCase
@@ -50,9 +51,13 @@ sealed class GameUiState {
         val projectedScore: Int,
         val isBust: Boolean,
         val checkoutSuggestion: List<String>?,
-        val lastCommittedRound: LastCommittedRound?
+        val lastCommittedRound: LastCommittedRound?,
+        /** Non-null while the "placement dialog" should be shown. */
+        val playerJustFinished: ActivePlayer? = null,
+        /** True when every player has a placement – only "end game" button shown. */
+        val allPlayersFinished: Boolean = false
     ) : GameUiState()
-    data class GameOver(val gameId: Long, val winnerName: String) : GameUiState()
+    data class GameOver(val gameId: Long) : GameUiState()
     object Abandoned : GameUiState()
     data class Error(val message: String) : GameUiState()
 }
@@ -131,6 +136,25 @@ class GameViewModel @Inject constructor(
     fun abandonGame() {
         activeGameStore.remove(gameId)
         _uiState.value = GameUiState.Abandoned
+    }
+
+    /** User chose to keep playing after a player finished – advance to the next active player. */
+    fun continueAfterPlacement() {
+        val state = _uiState.value as? GameUiState.Playing ?: return
+        val game = state.activeGame
+        val (nextIdx, newRound) = findNextActivePlayer(game.currentPlayerIndex, game.players)
+        if (nextIdx == -1) return // should not happen; button is hidden when allPlayersFinished
+        val updatedGame = game.copy(
+            currentPlayerIndex = nextIdx,
+            roundNumber = if (newRound) game.roundNumber + 1 else game.roundNumber
+        )
+        _uiState.value = buildPlayingState(updatedGame, emptyList(), null)
+    }
+
+    /** User chose to end the game from the placement dialog. */
+    fun endGame() {
+        activeGameStore.remove(gameId)
+        _uiState.value = GameUiState.GameOver(gameId = gameId)
     }
 
     /**
@@ -216,11 +240,28 @@ class GameViewModel @Inject constructor(
         )
 
         if (result.isWin) {
-            gameRepository.finishGame(activeGame.gameId, currentPlayer.playerId)
-            gameRepository.updatePlacement(currentPlayer.participantId, 1)
-            _uiState.value = GameUiState.GameOver(
-                gameId = activeGame.gameId,
-                winnerName = currentPlayer.playerName
+            val placement = activeGame.players.count { it.placement != null } + 1
+            // First-place finish finalises the game in the DB
+            if (placement == 1) {
+                gameRepository.finishGame(activeGame.gameId, currentPlayer.playerId)
+            }
+            gameRepository.updatePlacement(currentPlayer.participantId, placement)
+
+            val finishedPlayer = currentPlayer.copy(
+                remainingScore = 0,
+                currentRoundDarts = emptyList(),
+                scoreBeforeRound = 0,
+                placement = placement
+            )
+            val updatedPlayers = activeGame.players.mapIndexed { idx, player ->
+                if (idx == activeGame.currentPlayerIndex) finishedPlayer else player
+            }
+            val allDone = updatedPlayers.all { it.placement != null }
+            val updatedGame = activeGame.copy(players = updatedPlayers)
+
+            _uiState.value = buildPlayingState(updatedGame, emptyList(), null).copy(
+                playerJustFinished = finishedPlayer,
+                allPlayersFinished = allDone
             )
             return
         }
@@ -235,7 +276,7 @@ class GameViewModel @Inject constructor(
             roundNumber = activeGame.roundNumber
         )
 
-        // Advance to next player
+        // Update the current player's score
         val updatedPlayers = activeGame.players.mapIndexed { idx, player ->
             if (idx == activeGame.currentPlayerIndex) {
                 player.copy(
@@ -246,8 +287,9 @@ class GameViewModel @Inject constructor(
             } else player
         }
 
-        val nextIndex = (activeGame.currentPlayerIndex + 1) % activeGame.players.size
-        val nextRound = if (nextIndex == 0) activeGame.roundNumber + 1 else activeGame.roundNumber
+        // Advance to next active (non-finished) player
+        val (nextIndex, newRound) = findNextActivePlayer(activeGame.currentPlayerIndex, updatedPlayers)
+        val nextRound = if (newRound) activeGame.roundNumber + 1 else activeGame.roundNumber
 
         val updatedGame = activeGame.copy(
             players = updatedPlayers,
@@ -256,6 +298,22 @@ class GameViewModel @Inject constructor(
         )
 
         _uiState.value = buildPlayingState(updatedGame, emptyList(), lastCommittedRound = committed)
+    }
+
+    /**
+     * Returns the index of the next player without a placement, and whether we crossed
+     * index 0 (= a new round starts).
+     */
+    private fun findNextActivePlayer(currentIndex: Int, players: List<ActivePlayer>): Pair<Int, Boolean> {
+        val size = players.size
+        var idx = currentIndex
+        var crossedOrigin = false
+        for (i in 1..size) {
+            idx = (idx + 1) % size
+            if (idx == 0) crossedOrigin = true
+            if (players[idx].placement == null) return Pair(idx, crossedOrigin)
+        }
+        return Pair(-1, false)
     }
 
     private fun buildPlayingState(

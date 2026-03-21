@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.dartsapp.domain.model.DartInput
 import com.dartsapp.ui.screens.game.components.BustDialog
+import com.dartsapp.ui.screens.game.components.GameOverDialog
 import com.dartsapp.ui.screens.game.components.PlayerScoreCard
 import com.dartsapp.ui.screens.game.components.ScoreInputKeypad
 
@@ -68,9 +69,23 @@ fun GameScreen(
 
     LaunchedEffect(uiState) {
         when (uiState) {
-            is GameUiState.GameOver -> onGameOver((uiState as GameUiState.GameOver).gameId)
+            is GameUiState.GameOver  -> onGameOver((uiState as GameUiState.GameOver).gameId)
             is GameUiState.Abandoned -> onAbandonGame()
             else -> Unit
+        }
+    }
+
+    // Placement / game-over dialog
+    if (uiState is GameUiState.Playing) {
+        val playing = uiState as GameUiState.Playing
+        playing.playerJustFinished?.let { finished ->
+            GameOverDialog(
+                playerJustFinished = finished,
+                allPlayers         = playing.activeGame.players,
+                canContinue        = !playing.allPlayersFinished,
+                onContinue         = viewModel::continueAfterPlacement,
+                onEndGame          = viewModel::endGame
+            )
         }
     }
 
@@ -206,13 +221,7 @@ fun GameScreen(
                     }
                 }
             }
-            is GameUiState.GameOver -> {
-                Text(
-                    "${state.winnerName} gewinnt!",
-                    modifier = Modifier.padding(padding).padding(16.dp),
-                    style = MaterialTheme.typography.headlineMedium
-                )
-            }
+            is GameUiState.GameOver -> Unit // navigation handled via LaunchedEffect
             is GameUiState.Abandoned -> Unit
             is GameUiState.Error -> {
                 Text(
