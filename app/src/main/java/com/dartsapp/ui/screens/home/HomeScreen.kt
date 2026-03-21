@@ -89,12 +89,12 @@ private fun LandscapeLayout(
                 modifier = Modifier.weight(1f)
             )
             MenuCard(
-                label = "Spider",
+                label = "Spieler",
                 onClick = onNavigateSpider,
                 modifier = Modifier.weight(1f)
             )
             MenuCard(
-                label = "Stats",
+                label = "Statistik",
                 onClick = onNavigateStats,
                 modifier = Modifier.weight(1f)
             )
@@ -128,12 +128,12 @@ private fun PortraitLayout(
             modifier = Modifier.fillMaxWidth()
         )
         MenuCard(
-            label = "Spider",
+            label = "Spieler",
             onClick = onNavigateSpider,
             modifier = Modifier.fillMaxWidth()
         )
         MenuCard(
-            label = "Stats",
+            label = "Statistik",
             onClick = onNavigateStats,
             modifier = Modifier.fillMaxWidth()
         )

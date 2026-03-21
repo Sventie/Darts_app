@@ -50,13 +50,13 @@ fun ScoreInputKeypad(
             FilterChip(
                 selected = inputMode == InputMode.KEYPAD,
                 onClick  = { inputMode = InputMode.KEYPAD },
-                label    = { Text("Keypad") },
+                label    = { Text("Tastatur") },
                 modifier = Modifier.padding(end = 8.dp)
             )
             FilterChip(
                 selected = inputMode == InputMode.BOARD,
                 onClick  = { inputMode = InputMode.BOARD },
-                label    = { Text("Board") }
+                label    = { Text("Scheibe") }
             )
         }
 
@@ -117,7 +117,7 @@ fun ScoreInputKeypad(
                     OutlinedButton(onClick = {
                         onDartEntered(DartInput(0, ScoreMultiplier.SINGLE, 0))
                         selectedMultiplier = ScoreMultiplier.SINGLE
-                    }) { Text("Miss") }
+                    }) { Text("Daneben") }
 
                     OutlinedButton(onClick = {
                         val mult = if (selectedMultiplier == ScoreMultiplier.TRIPLE) ScoreMultiplier.DOUBLE else selectedMultiplier
@@ -134,7 +134,7 @@ fun ScoreInputKeypad(
                         onClick = onUndo,
                         enabled = dartsEntered > 0,
                         colors  = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                    ) { Text("Undo") }
+                    ) { Text("Rückgängig") }
                 }
             }
 
@@ -156,7 +156,7 @@ fun ScoreInputKeypad(
                         onClick = onUndo,
                         enabled = dartsEntered > 0,
                         colors  = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                    ) { Text("Undo") }
+                    ) { Text("Rückgängig") }
                 }
             }
         }

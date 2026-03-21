@@ -104,7 +104,7 @@ fun GameScreen(
     ) { padding ->
         when (val state = uiState) {
             is GameUiState.Loading -> {
-                Text("Loading...", modifier = Modifier.padding(padding).padding(16.dp))
+                Text("Laden...", modifier = Modifier.padding(padding).padding(16.dp))
             }
             is GameUiState.Playing -> {
                 val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -116,7 +116,7 @@ fun GameScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "Round ${state.activeGame.roundNumber}",
+                            text = "Runde ${state.activeGame.roundNumber}",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             textAlign = TextAlign.Center
@@ -132,7 +132,7 @@ fun GameScreen(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Total: ${state.roundTotal}   |   Projected: ${state.projectedScore}",
+                            text = "Gesamt: ${state.roundTotal}   |   Vorschau: ${state.projectedScore}",
                             style = MaterialTheme.typography.bodyMedium,
                             textAlign = TextAlign.Center,
                             color = if (state.isBust) MaterialTheme.colorScheme.error
@@ -224,7 +224,7 @@ fun GameScreen(
             }
             is GameUiState.GameOver -> {
                 Text(
-                    "${state.winnerName} wins!",
+                    "${state.winnerName} gewinnt!",
                     modifier = Modifier.padding(padding).padding(16.dp),
                     style = MaterialTheme.typography.headlineMedium
                 )
@@ -232,7 +232,7 @@ fun GameScreen(
             is GameUiState.Abandoned -> Unit
             is GameUiState.Error -> {
                 Text(
-                    "Error: ${state.message}",
+                    "Fehler: ${state.message}",
                     modifier = Modifier.padding(padding).padding(16.dp),
                     color = MaterialTheme.colorScheme.error
                 )

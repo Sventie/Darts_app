@@ -38,17 +38,17 @@ fun StatsDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stats?.playerName ?: "Statistics") },
+                title = { Text(stats?.playerName ?: "Statistik") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
                     }
                 }
             )
         }
     ) { padding ->
         if (stats == null) {
-            Text("No data yet.", modifier = Modifier.padding(padding).padding(16.dp))
+            Text("Noch keine Daten.", modifier = Modifier.padding(padding).padding(16.dp))
             return@Scaffold
         }
 
@@ -60,23 +60,23 @@ fun StatsDetailScreen(
                 .padding(16.dp)
         ) {
             item {
-                Text("Overview", style = MaterialTheme.typography.titleMedium)
+                Text("Übersicht", style = MaterialTheme.typography.titleMedium)
                 Spacer(modifier = Modifier.height(8.dp))
-                StatRow("Games Played", "${s.gamesPlayed}")
-                StatRow("Wins", "${s.wins}")
-                StatRow("Avg Score/Dart", String.format(Locale.getDefault(), "%.1f", s.avgScorePerDart))
-                StatRow("Avg Score/Round", String.format(Locale.getDefault(), "%.1f", s.avgScorePerRound))
-                StatRow("Highest Round", "${s.highestRound}")
-                StatRow("Total Darts Thrown", "${s.totalDartsThrown}")
+                StatRow("Gespielte Spiele", "${s.gamesPlayed}")
+                StatRow("Siege", "${s.wins}")
+                StatRow("Ø Punkte/Dart", String.format(Locale.getDefault(), "%.1f", s.avgScorePerDart))
+                StatRow("Ø Punkte/Runde", String.format(Locale.getDefault(), "%.1f", s.avgScorePerRound))
+                StatRow("Höchste Runde", "${s.highestRound}")
+                StatRow("Darts gesamt", "${s.totalDartsThrown}")
                 Spacer(modifier = Modifier.height(16.dp))
                 HorizontalDivider()
                 Spacer(modifier = Modifier.height(16.dp))
-                Text("Field Frequency", style = MaterialTheme.typography.titleMedium)
+                Text("Trefferverteilung", style = MaterialTheme.typography.titleMedium)
                 Spacer(modifier = Modifier.height(8.dp))
             }
             items(frequencies) { freq ->
                 val label = when (freq.field) {
-                    0 -> "Miss"
+                    0 -> "Daneben"
                     25 -> "Bull"
                     50 -> "Bullseye"
                     else -> "${freq.field}"
@@ -84,7 +84,7 @@ fun StatsDetailScreen(
                 ListItem(
                     headlineContent = { Text(label) },
                     supportingContent = {
-                        Text("S:${freq.singleCount}  D:${freq.doubleCount}  T:${freq.tripleCount}  Total:${freq.totalHits}")
+                        Text("S:${freq.singleCount}  D:${freq.doubleCount}  T:${freq.tripleCount}  Gesamt:${freq.totalHits}")
                     }
                 )
             }

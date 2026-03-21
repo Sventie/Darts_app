@@ -25,7 +25,7 @@ fun GameFinishScreen(
     onBackToHome: () -> Unit
 ) {
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Game Over") }) }
+        topBar = { TopAppBar(title = { Text("Spiel beendet") }) }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -35,7 +35,7 @@ fun GameFinishScreen(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("Game Finished!", style = MaterialTheme.typography.headlineMedium)
+            Text("Spiel beendet!", style = MaterialTheme.typography.headlineMedium)
             Spacer(modifier = Modifier.height(16.dp))
             Text("Game #$gameId", style = MaterialTheme.typography.bodyLarge)
             Spacer(modifier = Modifier.height(48.dp))
@@ -43,7 +43,7 @@ fun GameFinishScreen(
                 onClick = onBackToHome,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Back to Home")
+                Text("Zurück zur Startseite")
             }
         }
     }

@@ -56,10 +56,10 @@ fun PlayerManagementScreen(
         when (event) {
             is PlayerManagementEvent.PlayerCreated -> {
                 newPlayerName = ""
-                snackbarHostState.showSnackbar("Player created")
+                snackbarHostState.showSnackbar("Spieler erstellt")
             }
-            is PlayerManagementEvent.NameEmpty -> snackbarHostState.showSnackbar("Name cannot be empty")
-            is PlayerManagementEvent.NameTaken -> snackbarHostState.showSnackbar("Name already taken")
+            is PlayerManagementEvent.NameEmpty -> snackbarHostState.showSnackbar("Name darf nicht leer sein")
+            is PlayerManagementEvent.NameTaken -> snackbarHostState.showSnackbar("Name bereits vergeben")
             null -> {}
         }
         viewModel.clearEvent()
@@ -68,16 +68,16 @@ fun PlayerManagementScreen(
     playerToDelete?.let { player ->
         AlertDialog(
             onDismissRequest = { playerToDelete = null },
-            title = { Text("Delete Player") },
-            text = { Text("Delete \"${player.name}\"? This cannot be undone.") },
+            title = { Text("Spieler löschen") },
+            text = { Text("\"${player.name}\" löschen? Dies kann nicht rückgängig gemacht werden.") },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.deletePlayer(player)
                     playerToDelete = null
-                }) { Text("Delete") }
+                }) { Text("Löschen") }
             },
             dismissButton = {
-                TextButton(onClick = { playerToDelete = null }) { Text("Cancel") }
+                TextButton(onClick = { playerToDelete = null }) { Text("Abbrechen") }
             }
         )
     }
@@ -85,10 +85,10 @@ fun PlayerManagementScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Manage Players") },
+                title = { Text("Spieler verwalten") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
                     }
                 }
             )
@@ -105,7 +105,7 @@ fun PlayerManagementScreen(
                 OutlinedTextField(
                     value = newPlayerName,
                     onValueChange = { newPlayerName = it },
-                    label = { Text("Player name") },
+                    label = { Text("Spielername") },
                     singleLine = true,
                     modifier = Modifier.weight(1f)
                 )
@@ -114,7 +114,7 @@ fun PlayerManagementScreen(
                     onClick = { viewModel.createPlayer(newPlayerName) },
                     modifier = Modifier.padding(top = 8.dp)
                 ) {
-                    Text("Add")
+                    Text("Hinzufügen")
                 }
             }
 
@@ -122,7 +122,7 @@ fun PlayerManagementScreen(
 
             if (players.isEmpty()) {
                 Text(
-                    text = "No players yet. Add one above.",
+                    text = "Noch keine Spieler. Füge oben einen hinzu.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
@@ -133,7 +133,7 @@ fun PlayerManagementScreen(
                             headlineContent = { Text(player.name) },
                             trailingContent = {
                                 IconButton(onClick = { playerToDelete = player }) {
-                                    Icon(Icons.Default.Delete, contentDescription = "Delete ${player.name}")
+                                    Icon(Icons.Default.Delete, contentDescription = "Löschen: ${player.name}")
                                 }
                             }
                         )

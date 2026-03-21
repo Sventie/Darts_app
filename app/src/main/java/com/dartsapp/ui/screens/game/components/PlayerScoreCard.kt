@@ -42,7 +42,7 @@ fun PlayerScoreCard(
                 )
                 if (isCurrentPlayer) {
                     Text(
-                        text = "Your turn",
+                        text = "Du bist dran",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary
                     )

@@ -10,12 +10,12 @@ import com.dartsapp.ui.screens.game.BustInfo
 fun BustDialog(bustInfo: BustInfo, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Bust!") },
+        title = { Text("Überworfen!") },
         text = {
             Text(
-                "${bustInfo.playerName} busted! " +
-                "Attempted: ${bustInfo.attemptedScore}, " +
-                "Score stays at ${bustInfo.remainingBefore}."
+                "${bustInfo.playerName} hat überworfen! " +
+                "Versucht: ${bustInfo.attemptedScore}, " +
+                "Punktestand bleibt bei ${bustInfo.remainingBefore}."
             )
         },
         confirmButton = {
