@@ -6,9 +6,11 @@ import androidx.lifecycle.viewModelScope
 import com.dartsapp.data.repository.GameRepository
 import com.dartsapp.di.ActiveGameStore
 import com.dartsapp.domain.model.ActiveGame
+import com.dartsapp.domain.model.CloseCondition
 import com.dartsapp.domain.model.DartInput
 import com.dartsapp.domain.usecase.game.BustResult
 import com.dartsapp.domain.usecase.game.CheckBustUseCase
+import com.dartsapp.domain.usecase.game.CheckoutSuggestion
 import com.dartsapp.domain.usecase.game.ProcessRoundUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -35,7 +37,8 @@ sealed class GameUiState {
         val currentRoundDarts: List<DartInput>,
         val roundTotal: Int,
         val projectedScore: Int,
-        val isBust: Boolean
+        val isBust: Boolean,
+        val checkoutSuggestion: List<String>?
     ) : GameUiState()
     data class GameOver(val gameId: Long, val winnerName: String) : GameUiState()
     object Abandoned : GameUiState()
@@ -97,11 +100,17 @@ class GameViewModel @Inject constructor(
             }
             else -> {
                 val roundTotal = darts.sumOf { it.scoreValue }
+                val projected = state.currentPlayerScore - roundTotal
                 _uiState.value = state.copy(
                     currentRoundDarts = darts,
                     roundTotal = roundTotal,
-                    projectedScore = state.currentPlayerScore - roundTotal,
-                    isBust = false
+                    projectedScore = projected,
+                    isBust = false,
+                    checkoutSuggestion = CheckoutSuggestion.suggest(
+                        remaining = projected,
+                        dartsLeft = 3 - darts.size,
+                        closeCondition = state.activeGame.config.closeCondition
+                    )
                 )
             }
         }
@@ -117,11 +126,17 @@ class GameViewModel @Inject constructor(
         if (state.currentRoundDarts.isEmpty()) return
         val darts = state.currentRoundDarts.dropLast(1)
         val roundTotal = darts.sumOf { it.scoreValue }
+        val projected = state.currentPlayerScore - roundTotal
         _uiState.value = state.copy(
             currentRoundDarts = darts,
             roundTotal = roundTotal,
-            projectedScore = state.currentPlayerScore - roundTotal,
-            isBust = false
+            projectedScore = projected,
+            isBust = false,
+            checkoutSuggestion = CheckoutSuggestion.suggest(
+                remaining = projected,
+                dartsLeft = 3 - darts.size,
+                closeCondition = state.activeGame.config.closeCondition
+            )
         )
     }
 
@@ -178,14 +193,20 @@ class GameViewModel @Inject constructor(
     private fun buildPlayingState(game: ActiveGame, darts: List<DartInput>): GameUiState.Playing {
         val player = game.currentPlayer
         val roundTotal = darts.sumOf { it.scoreValue }
+        val projected = player.remainingScore - roundTotal
         return GameUiState.Playing(
             activeGame = game,
             currentPlayerName = player.playerName,
             currentPlayerScore = player.remainingScore,
             currentRoundDarts = darts,
             roundTotal = roundTotal,
-            projectedScore = player.remainingScore - roundTotal,
-            isBust = false
+            projectedScore = projected,
+            isBust = false,
+            checkoutSuggestion = CheckoutSuggestion.suggest(
+                remaining = projected,
+                dartsLeft = 3 - darts.size,
+                closeCondition = game.config.closeCondition
+            )
         )
     }
 }
