@@ -53,7 +53,7 @@ import com.dartsapp.ui.screens.game.components.ScoreInputKeypad
 
 @Composable
 fun GameScreen(
-    onGameOver: (Long) -> Unit,
+    onGameOver: () -> Unit,
     onAbandonGame: () -> Unit,
     viewModel: GameViewModel = hiltViewModel()
 ) {
@@ -69,7 +69,7 @@ fun GameScreen(
 
     LaunchedEffect(uiState) {
         when (uiState) {
-            is GameUiState.GameOver  -> onGameOver((uiState as GameUiState.GameOver).gameId)
+            is GameUiState.GameOver  -> onGameOver()
             is GameUiState.Abandoned -> onAbandonGame()
             else -> Unit
         }
