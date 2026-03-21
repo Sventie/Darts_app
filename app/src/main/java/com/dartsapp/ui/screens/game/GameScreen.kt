@@ -126,6 +126,7 @@ fun GameScreen(
                             dartsEntered = state.currentRoundDarts.size,
                             onDartEntered = viewModel::onDartEntered,
                             onUndo = viewModel::onUndoLastDart,
+                            canUndo = state.currentRoundDarts.isNotEmpty() || state.lastCommittedRound != null,
                             modifier = Modifier
                                 .fillMaxHeight()
                                 .weight(0.58f)
@@ -182,6 +183,7 @@ fun GameScreen(
                             dartsEntered = state.currentRoundDarts.size,
                             onDartEntered = viewModel::onDartEntered,
                             onUndo = viewModel::onUndoLastDart,
+                            canUndo = state.currentRoundDarts.isNotEmpty() || state.lastCommittedRound != null,
                             modifier = Modifier.fillMaxWidth()
                         )
                     }

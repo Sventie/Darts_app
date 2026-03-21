@@ -15,4 +15,7 @@ interface RoundDao {
 
     @Query("SELECT COUNT(*) FROM rounds WHERE game_participant_id = :participantId")
     suspend fun getRoundCountForParticipant(participantId: Long): Int
+
+    @Query("DELETE FROM rounds WHERE id = :roundId")
+    suspend fun deleteById(roundId: Long)
 }

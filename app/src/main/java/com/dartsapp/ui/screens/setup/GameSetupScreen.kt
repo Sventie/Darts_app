@@ -109,9 +109,9 @@ fun GameSetupScreen(viewModel: GameSetupViewModel, onBack: () -> Unit) {
             OutlinedButton(
                 onClick = { viewModel.randomizePlayerOrder() },
                 enabled = selectedIds.size > 1,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().height(96.dp)
             ) {
-                Text("🔀 Zufällige Reihenfolge")
+                Text("Zufällige Reihenfolge", style = MaterialTheme.typography.titleMedium)
             }
 
             Spacer(Modifier.height(24.dp))
@@ -152,9 +152,9 @@ fun GameSetupScreen(viewModel: GameSetupViewModel, onBack: () -> Unit) {
             Button(
                 onClick = { viewModel.startGame() },
                 enabled = selectedIds.isNotEmpty(),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().height(96.dp)
             ) {
-                Text("Spiel starten")
+                Text("Spiel starten", style = MaterialTheme.typography.titleLarge)
             }
         }
     }
@@ -172,7 +172,7 @@ fun GameSetupScreen(viewModel: GameSetupViewModel, onBack: () -> Unit) {
 @Composable
 private fun PlayerCard(player: PlayerEntity, modifier: Modifier = Modifier) {
     Card(
-        modifier = modifier.size(72.dp),
+        modifier = modifier.size(144.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer
         )
@@ -181,11 +181,11 @@ private fun PlayerCard(player: PlayerEntity, modifier: Modifier = Modifier) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = player.name.take(2).uppercase(),
-                    style = MaterialTheme.typography.titleMedium
+                    style = MaterialTheme.typography.headlineMedium
                 )
                 Text(
                     text = player.name,
-                    style = MaterialTheme.typography.labelSmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(horizontal = 4.dp)
@@ -199,7 +199,7 @@ private fun PlayerCard(player: PlayerEntity, modifier: Modifier = Modifier) {
 private fun AddPlayerCard(onClick: () -> Unit) {
     OutlinedCard(
         onClick = onClick,
-        modifier = Modifier.size(72.dp)
+        modifier = Modifier.size(144.dp)
     ) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Icon(Icons.Default.Add, contentDescription = "Spieler hinzufügen")
@@ -211,14 +211,14 @@ private fun AddPlayerCard(onClick: () -> Unit) {
 private fun ScoreCard(score: Int, isSelected: Boolean, onClick: () -> Unit) {
     Card(
         onClick = onClick,
-        modifier = Modifier.size(width = 80.dp, height = 56.dp),
+        modifier = Modifier.size(width = 160.dp, height = 112.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer
             else MaterialTheme.colorScheme.surfaceVariant
         )
     ) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("$score", style = MaterialTheme.typography.titleMedium)
+            Text("$score", style = MaterialTheme.typography.headlineMedium)
         }
     }
 }

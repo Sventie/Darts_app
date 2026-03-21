@@ -3,6 +3,7 @@ package com.dartsapp.ui.screens.setup
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dartsapp.data.db.entity.PlayerEntity
+import com.dartsapp.data.repository.GameRepository
 import com.dartsapp.domain.model.CloseCondition
 import com.dartsapp.domain.model.GameConfig
 import com.dartsapp.di.ActiveGameStore
@@ -21,7 +22,8 @@ import javax.inject.Inject
 class GameSetupViewModel @Inject constructor(
     getPlayersUseCase: GetPlayersUseCase,
     private val startGameUseCase: StartGameUseCase,
-    private val activeGameStore: ActiveGameStore
+    private val activeGameStore: ActiveGameStore,
+    private val gameRepository: GameRepository
 ) : ViewModel() {
 
     val players: StateFlow<List<PlayerEntity>> = getPlayersUseCase()
@@ -38,6 +40,15 @@ class GameSetupViewModel @Inject constructor(
 
     private val _startedGameId = MutableStateFlow<Long?>(null)
     val startedGameId: StateFlow<Long?> = _startedGameId.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            val lastIds = gameRepository.getLastGamePlayerIds()
+            if (lastIds.isNotEmpty()) {
+                _selectedPlayerIds.value = lastIds
+            }
+        }
+    }
 
     fun togglePlayer(playerId: Long) {
         val current = _selectedPlayerIds.value.toMutableList()

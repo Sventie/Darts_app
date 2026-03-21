@@ -10,6 +10,7 @@ import com.dartsapp.domain.model.DartInput
 import javax.inject.Inject
 
 data class ProcessRoundResult(
+    val roundId: Long,
     val scoreAfter: Int,
     val isWin: Boolean,
     val wasBust: Boolean
@@ -64,6 +65,6 @@ class ProcessRoundUseCase @Inject constructor(
 
         gameParticipantDao.updateFinalScore(participantId, scoreAfter)
 
-        return ProcessRoundResult(scoreAfter = scoreAfter, isWin = isWin, wasBust = wasBust)
+        return ProcessRoundResult(roundId = roundId, scoreAfter = scoreAfter, isWin = isWin, wasBust = wasBust)
     }
 }

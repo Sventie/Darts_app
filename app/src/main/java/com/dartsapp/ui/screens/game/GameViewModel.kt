@@ -6,7 +6,6 @@ import androidx.lifecycle.viewModelScope
 import com.dartsapp.data.repository.GameRepository
 import com.dartsapp.di.ActiveGameStore
 import com.dartsapp.domain.model.ActiveGame
-import com.dartsapp.domain.model.CloseCondition
 import com.dartsapp.domain.model.DartInput
 import com.dartsapp.domain.usecase.game.BustResult
 import com.dartsapp.domain.usecase.game.CheckBustUseCase
@@ -28,6 +27,18 @@ data class BustInfo(
     val remainingBefore: Int
 )
 
+/**
+ * Snapshot of the last committed round used to support cross-turn undo.
+ */
+data class LastCommittedRound(
+    val roundId: Long,
+    val participantId: Long,
+    val playerIndex: Int,
+    val scoreBeforeRound: Int,
+    val darts: List<DartInput>,
+    val roundNumber: Int
+)
+
 sealed class GameUiState {
     object Loading : GameUiState()
     data class Playing(
@@ -38,7 +49,8 @@ sealed class GameUiState {
         val roundTotal: Int,
         val projectedScore: Int,
         val isBust: Boolean,
-        val checkoutSuggestion: List<String>?
+        val checkoutSuggestion: List<String>?,
+        val lastCommittedRound: LastCommittedRound?
     ) : GameUiState()
     data class GameOver(val gameId: Long, val winnerName: String) : GameUiState()
     object Abandoned : GameUiState()
@@ -65,7 +77,7 @@ class GameViewModel @Inject constructor(
     init {
         val activeGame = activeGameStore.get(gameId)
         if (activeGame != null) {
-            _uiState.value = buildPlayingState(activeGame, emptyList())
+            _uiState.value = buildPlayingState(activeGame, emptyList(), lastCommittedRound = null)
         } else {
             _uiState.value = GameUiState.Error("Game not found")
         }
@@ -121,22 +133,67 @@ class GameViewModel @Inject constructor(
         _uiState.value = GameUiState.Abandoned
     }
 
+    /**
+     * Undo the last dart.
+     *
+     * - If darts have been entered this turn: remove the last dart (in-round undo).
+     * - Otherwise: undo the entire last committed round (cross-turn undo), reverting
+     *   the previous player's score and removing the round from the database so
+     *   statistics stay accurate.
+     */
     fun onUndoLastDart() {
         val state = _uiState.value as? GameUiState.Playing ?: return
-        if (state.currentRoundDarts.isEmpty()) return
-        val darts = state.currentRoundDarts.dropLast(1)
-        val roundTotal = darts.sumOf { it.scoreValue }
-        val projected = state.currentPlayerScore - roundTotal
-        _uiState.value = state.copy(
-            currentRoundDarts = darts,
-            roundTotal = roundTotal,
-            projectedScore = projected,
-            isBust = false,
-            checkoutSuggestion = CheckoutSuggestion.suggest(
-                remaining = projected,
-                dartsLeft = 3 - darts.size,
-                closeCondition = state.activeGame.config.closeCondition
+
+        if (state.currentRoundDarts.isNotEmpty()) {
+            // In-round undo – no DB changes needed
+            val darts = state.currentRoundDarts.dropLast(1)
+            val roundTotal = darts.sumOf { it.scoreValue }
+            val projected = state.currentPlayerScore - roundTotal
+            _uiState.value = state.copy(
+                currentRoundDarts = darts,
+                roundTotal = roundTotal,
+                projectedScore = projected,
+                isBust = false,
+                checkoutSuggestion = CheckoutSuggestion.suggest(
+                    remaining = projected,
+                    dartsLeft = 3 - darts.size,
+                    closeCondition = state.activeGame.config.closeCondition
+                )
             )
+        } else if (state.lastCommittedRound != null) {
+            viewModelScope.launch { undoLastCommittedRound(state) }
+        }
+    }
+
+    private suspend fun undoLastCommittedRound(state: GameUiState.Playing) {
+        val last = state.lastCommittedRound ?: return
+
+        // Revert DB: delete round (CASCADE removes dart_throws) and restore score
+        gameRepository.undoRound(last.roundId, last.participantId, last.scoreBeforeRound)
+
+        // Restore the player's score in the in-memory game state
+        val activeGame = state.activeGame
+        val restoredPlayers = activeGame.players.mapIndexed { idx, player ->
+            if (idx == last.playerIndex) {
+                player.copy(
+                    remainingScore = last.scoreBeforeRound,
+                    scoreBeforeRound = last.scoreBeforeRound,
+                    currentRoundDarts = emptyList()
+                )
+            } else player
+        }
+
+        val restoredGame = activeGame.copy(
+            players = restoredPlayers,
+            currentPlayerIndex = last.playerIndex,
+            roundNumber = last.roundNumber
+        )
+
+        // Rebuild state with the original darts pre-loaded so the user can correct them
+        _uiState.value = buildPlayingState(
+            game = restoredGame,
+            darts = last.darts,
+            lastCommittedRound = null  // only one level of cross-turn undo
         )
     }
 
@@ -167,6 +224,16 @@ class GameViewModel @Inject constructor(
             return
         }
 
+        // Capture the completed round for cross-turn undo
+        val committed = LastCommittedRound(
+            roundId = result.roundId,
+            participantId = currentPlayer.participantId,
+            playerIndex = activeGame.currentPlayerIndex,
+            scoreBeforeRound = currentPlayer.scoreBeforeRound,
+            darts = darts,
+            roundNumber = activeGame.roundNumber
+        )
+
         // Advance to next player
         val updatedPlayers = activeGame.players.mapIndexed { idx, player ->
             if (idx == activeGame.currentPlayerIndex) {
@@ -187,10 +254,14 @@ class GameViewModel @Inject constructor(
             roundNumber = nextRound
         )
 
-        _uiState.value = buildPlayingState(updatedGame, emptyList())
+        _uiState.value = buildPlayingState(updatedGame, emptyList(), lastCommittedRound = committed)
     }
 
-    private fun buildPlayingState(game: ActiveGame, darts: List<DartInput>): GameUiState.Playing {
+    private fun buildPlayingState(
+        game: ActiveGame,
+        darts: List<DartInput>,
+        lastCommittedRound: LastCommittedRound?
+    ): GameUiState.Playing {
         val player = game.currentPlayer
         val roundTotal = darts.sumOf { it.scoreValue }
         val projected = player.remainingScore - roundTotal
@@ -206,7 +277,8 @@ class GameViewModel @Inject constructor(
                 remaining = projected,
                 dartsLeft = 3 - darts.size,
                 closeCondition = game.config.closeCondition
-            )
+            ),
+            lastCommittedRound = lastCommittedRound
         )
     }
 }
