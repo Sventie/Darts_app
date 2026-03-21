@@ -103,11 +103,11 @@ fun ScoreInputKeypad(
 
                 Spacer(modifier = Modifier.height(GROUP_GAP))
 
-                // Number grid 1-20 – takes all remaining height via weight
+                // Number grid 1-20 – fixed height (4 rows) so special buttons sit directly below
                 val numbers = (1..20).toList()
                 LazyVerticalGrid(
                     columns               = GridCells.Fixed(5),
-                    modifier              = Modifier.fillMaxWidth().weight(1f),
+                    modifier              = Modifier.fillMaxWidth().height(BTN_H * 4 + 4.dp * 3),
                     verticalArrangement   = Arrangement.spacedBy(4.dp),
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
@@ -128,9 +128,9 @@ fun ScoreInputKeypad(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(INNER_GAP))
+                Spacer(modifier = Modifier.height(GROUP_GAP))
 
-                // Special buttons – sit in the empty space just below the grid
+                // Special buttons – directly below grid, same gap as multiplier row above
                 Row(
                     modifier              = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -164,9 +164,10 @@ fun ScoreInputKeypad(
                     ) { Text("Bullseye") }
                 }
 
-                Spacer(modifier = Modifier.height(INNER_GAP))
+                // Remaining space goes here, pushing Rückgängig to the bottom
+                Spacer(modifier = Modifier.weight(1f))
 
-                // Rückgängig stays at the very bottom-end
+                // Rückgängig at the very bottom-end
                 Row(
                     modifier              = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
