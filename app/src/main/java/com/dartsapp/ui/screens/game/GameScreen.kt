@@ -269,29 +269,39 @@ private fun GameSidePanel(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier.fillMaxHeight().padding(vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        modifier = modifier.fillMaxHeight().padding(vertical = 8.dp)
     ) {
-        // Player cards in a 2-column grid (weight(1f) so it fills available space)
+        // Player cards – natural (rectangular) height, 2 per row, generous spacing
         val players = state.activeGame.players
-        val columns = if (players.size > 2) 2 else players.size.coerceAtLeast(1)
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(columns),
-            modifier = Modifier.fillMaxWidth().weight(1f),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+        val rows = players.chunked(2)
+        Column(
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(players.indices.toList()) { idx ->
-                val isCurrent = idx == state.activeGame.currentPlayerIndex
-                PlayerScoreCard(
-                    player = players[idx],
-                    isCurrentPlayer = isCurrent,
-                    displayScore = if (isCurrent) state.projectedScore else players[idx].remainingScore
-                )
+            rows.forEach { rowPlayers ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    rowPlayers.forEachIndexed { colIdx, player ->
+                        val globalIdx = players.indexOf(player)
+                        val isCurrent = globalIdx == state.activeGame.currentPlayerIndex
+                        PlayerScoreCard(
+                            player = player,
+                            isCurrentPlayer = isCurrent,
+                            displayScore = if (isCurrent) state.projectedScore else player.remainingScore,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    // Fill empty slot if row has only one player
+                    if (rowPlayers.size == 1) Spacer(Modifier.weight(1f))
+                }
             }
         }
 
+        Spacer(Modifier.weight(1f))
+
         HorizontalDivider()
+        Spacer(Modifier.height(8.dp))
 
         // Dart throws + checkout suggestion – always visible
         Row(
