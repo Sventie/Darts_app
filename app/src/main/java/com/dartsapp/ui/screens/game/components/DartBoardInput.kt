@@ -40,8 +40,8 @@ private const val R_TRIPLE_IN  = 0.336f  // triple ring inner edge
 private const val R_TRIPLE_OUT = 0.432f  // triple ring outer edge  (96dp wide = 2.3× original)
 private const val R_DOUBLE_IN      = 0.680f  // double ring inner edge
 private const val R_DOUBLE_OUT     = 0.800f  // double ring outer edge  (120dp wide = 2.9× original)
-private const val R_LABEL_RING_OUT = 0.960f  // outer edge of the dark number ring
-private const val R_LABEL          = 0.878f  // center of label ring: (0.800 + 0.956) / 2
+private const val R_LABEL_RING_OUT = 0.920f  // outer edge of the dark number ring
+private const val R_LABEL          = 0.858f  // center of label ring: (0.800 + 0.916) / 2
 
 private val ColBoardBg   = Color(0xFF111111)
 private val ColLabelRing = Color(0xFF0D0D0D)
@@ -188,7 +188,7 @@ private fun DrawScope.drawBoard(center: Offset, R: Float, textMeasurer: androidx
     // Number labels
     val labelStyle = TextStyle(
         color      = Color.White,
-        fontSize   = 14.sp,
+        fontSize   = 11.sp,
         fontWeight = FontWeight.Bold
     )
     for (i in 0 until 20) {
