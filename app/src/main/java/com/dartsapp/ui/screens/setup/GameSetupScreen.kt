@@ -44,12 +44,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.dartsapp.data.db.entity.PlayerEntity
 import com.dartsapp.domain.model.CloseCondition
 import com.dartsapp.domain.model.GameConfig
+import com.dartsapp.domain.model.PlayerStats
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
@@ -63,6 +66,7 @@ fun GameSetupScreen(viewModel: GameSetupViewModel, onBack: () -> Unit) {
     val selectedIds by viewModel.selectedPlayerIds.collectAsState()
     val startingScore by viewModel.startingScore.collectAsState()
     val closeCondition by viewModel.closeCondition.collectAsState()
+    val playerStats by viewModel.playerStats.collectAsState()
     var showPlayerDialog by remember { mutableStateOf(false) }
 
     val selectedPlayers = remember(players, selectedIds) {
@@ -111,7 +115,11 @@ fun GameSetupScreen(viewModel: GameSetupViewModel, onBack: () -> Unit) {
             ) {
                 items(selectedPlayers, key = { it.id }) { player ->
                     ReorderableItem(reorderState, key = player.id) { _ ->
-                        PlayerCard(player = player, modifier = Modifier.draggableHandle())
+                        PlayerCard(
+                            player = player,
+                            stats = playerStats[player.id],
+                            modifier = Modifier.draggableHandle()
+                        )
                     }
                 }
                 item(key = "add_button") {
@@ -186,29 +194,61 @@ fun GameSetupScreen(viewModel: GameSetupViewModel, onBack: () -> Unit) {
 }
 
 @Composable
-private fun PlayerCard(player: PlayerEntity, modifier: Modifier = Modifier) {
+private fun PlayerCard(
+    player: PlayerEntity,
+    stats: PlayerStats?,
+    modifier: Modifier = Modifier
+) {
+    // Pick one random stat label per player, stable across recompositions
+    val statLabel = remember(player.id, stats) { randomStatLabel(stats) }
+
     Card(
         modifier = modifier.size(144.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer
         )
     ) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = player.name.take(2).uppercase(),
-                    style = MaterialTheme.typography.headlineMedium
-                )
+        Box(
+            modifier = Modifier.fillMaxSize().padding(8.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
                 Text(
                     text = player.name,
-                    style = MaterialTheme.typography.bodyMedium,
-                    maxLines = 1,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(horizontal = 4.dp)
+                    textAlign = TextAlign.Center
                 )
+                if (statLabel != null) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = statLabel,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
+                        textAlign = TextAlign.Center,
+                        maxLines = 1
+                    )
+                }
             }
         }
     }
+}
+
+private fun randomStatLabel(stats: PlayerStats?): String? {
+    if (stats == null || stats.gamesPlayed == 0) return null
+    val options = buildList {
+        add("Ø ${String.format("%.1f", stats.avgScorePerRound)} / Aufn.")
+        add("Bestes: ${stats.highestRound}")
+        add("${stats.wins} Siege")
+        add("${stats.gamesPlayed} Spiele")
+        if (stats.totalDartsThrown > 0) add("${stats.totalDartsThrown} Darts")
+    }
+    return options.random()
 }
 
 @Composable
