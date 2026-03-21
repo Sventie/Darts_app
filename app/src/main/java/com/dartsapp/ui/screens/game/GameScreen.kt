@@ -19,7 +19,8 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -27,11 +28,13 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.VerticalDivider
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -94,20 +97,44 @@ fun GameScreen(
     }
 
     if (showAbandonDialog) {
-        AlertDialog(
-            onDismissRequest = { showAbandonDialog = false },
-            title = { Text("Spiel abbrechen?") },
-            text = { Text("Das laufende Spiel wird beendet und nicht gewertet.") },
-            confirmButton = {
-                TextButton(onClick = {
-                    showAbandonDialog = false
-                    viewModel.abandonGame()
-                }) { Text("Abbrechen", color = MaterialTheme.colorScheme.error) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showAbandonDialog = false }) { Text("Weiterspielen") }
+        Dialog(onDismissRequest = { showAbandonDialog = false }) {
+            Surface(
+                shape = MaterialTheme.shapes.large,
+                tonalElevation = 6.dp
+            ) {
+                Column(modifier = Modifier.padding(24.dp)) {
+                    Text(
+                        text = "Spiel abbrechen?",
+                        style = MaterialTheme.typography.headlineSmall
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        text = "Das laufende Spiel wird beendet und nicht gewertet.",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(Modifier.height(24.dp))
+                    Button(
+                        onClick = {
+                            showAbandonDialog = false
+                            viewModel.abandonGame()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Text("Spiel abbrechen")
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedButton(
+                        onClick = { showAbandonDialog = false },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Weiterspielen")
+                    }
+                }
             }
-        )
+        }
     }
 
     Scaffold(
