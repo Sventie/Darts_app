@@ -257,31 +257,24 @@ private fun GameSidePanel(
 
         HorizontalDivider()
 
-        // Dart throws + checkout suggestion
-        if (state.currentRoundDarts.isNotEmpty() || state.checkoutSuggestion != null) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.Top
-            ) {
-                // Left: thrown darts + total (only when darts have been entered)
-                if (state.currentRoundDarts.isNotEmpty()) {
-                    DartsInfoCard(
-                        darts = state.currentRoundDarts,
-                        total = state.roundTotal,
-                        isBust = state.isBust,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
+        // Dart throws + checkout suggestion – always visible
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+            DartsInfoCard(
+                darts = state.currentRoundDarts,
+                total = state.roundTotal,
+                isBust = state.isBust,
+                modifier = Modifier.weight(1f)
+            )
 
-                // Right: checkout suggestion
-                state.checkoutSuggestion?.let { suggestion ->
-                    CheckoutSuggestionCard(
-                        suggestion = suggestion,
-                        modifier = if (state.currentRoundDarts.isEmpty()) Modifier.fillMaxWidth()
-                        else Modifier.weight(1f)
-                    )
-                }
+            state.checkoutSuggestion?.let { suggestion ->
+                CheckoutSuggestionCard(
+                    suggestion = suggestion,
+                    modifier = Modifier.weight(1f)
+                )
             }
         }
     }
@@ -312,21 +305,24 @@ private fun DartsInfoCard(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                val dartLabels = darts.joinToString("  –  ") { it.scoreValue.toString() }
+                val dartLabels = if (darts.isEmpty()) "–"
+                    else darts.joinToString("  –  ") { it.scoreValue.toString() }
                 Text(
                     text = dartLabels,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )
             }
-            // Right: total score
-            Text(
-                text = "$total",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = if (isBust) MaterialTheme.colorScheme.error
-                else MaterialTheme.colorScheme.onSurface
-            )
+            // Right: total score (hidden when no darts thrown yet)
+            if (darts.isNotEmpty()) {
+                Text(
+                    text = "$total",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isBust) MaterialTheme.colorScheme.error
+                    else MaterialTheme.colorScheme.onSurface
+                )
+            }
         }
     }
 }
@@ -342,18 +338,18 @@ private fun CheckoutSuggestionCard(
             containerColor = MaterialTheme.colorScheme.secondaryContainer
         )
     ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+        Row(
+            modifier = Modifier.padding(12.dp).fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "Checkout",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
-            )
-            suggestion.forEach { dart ->
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    text = dart,
+                    text = "Checkout",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+                )
+                Text(
+                    text = suggestion.joinToString("  –  "),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSecondaryContainer
