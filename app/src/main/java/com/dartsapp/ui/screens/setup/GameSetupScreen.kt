@@ -1,53 +1,102 @@
 package com.dartsapp.ui.screens.setup
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.dartsapp.data.db.entity.PlayerEntity
 import com.dartsapp.domain.model.CloseCondition
 import com.dartsapp.domain.model.GameConfig
+import com.dartsapp.domain.model.PlayerStats
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyListState
 
-@OptIn(ExperimentalMaterial3Api::class)
+private val CARD_CORNER = RoundedCornerShape(12.dp)
+private val ACTION_BTN_H: Dp = 56.dp
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun GameSetupScreen(viewModel: GameSetupViewModel, onBack: () -> Unit) {
     val players by viewModel.players.collectAsState()
     val selectedIds by viewModel.selectedPlayerIds.collectAsState()
     val startingScore by viewModel.startingScore.collectAsState()
     val closeCondition by viewModel.closeCondition.collectAsState()
+    val playerStats by viewModel.playerStats.collectAsState()
+    var showPlayerDialog by remember { mutableStateOf(false) }
+
+    val selectedPlayers = remember(players, selectedIds) {
+        selectedIds.mapNotNull { id -> players.find { it.id == id } }
+    }
+
+    val lazyListState = rememberLazyListState()
+    val reorderState = rememberReorderableLazyListState(lazyListState) { from, to ->
+        viewModel.reorderPlayers(from.index, to.index)
+    }
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("New Game") },
-                navigationIcon = {
+            Surface(
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 3.dp
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .windowInsetsPadding(WindowInsets.statusBars)
+                        .padding(horizontal = 4.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
                     }
+                    Text("Neues Spiel", style = MaterialTheme.typography.titleLarge)
                 }
-            )
+            }
         }
     ) { padding ->
         Column(
@@ -55,64 +104,198 @@ fun GameSetupScreen(viewModel: GameSetupViewModel, onBack: () -> Unit) {
                 .fillMaxSize()
                 .padding(padding)
                 .padding(16.dp)
+                .verticalScroll(rememberScrollState())
         ) {
-            Text("Select Players", style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(8.dp))
+            Text("Spieler", style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(8.dp))
 
-            LazyColumn(modifier = Modifier.weight(1f)) {
-                items(players, key = { it.id }) { player ->
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Checkbox(
-                            checked = player.id in selectedIds,
-                            onCheckedChange = { viewModel.togglePlayer(player.id) }
+            LazyRow(
+                state = lazyListState,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(selectedPlayers, key = { it.id }) { player ->
+                    ReorderableItem(reorderState, key = player.id) { _ ->
+                        PlayerCard(
+                            player = player,
+                            stats = playerStats[player.id],
+                            modifier = Modifier.draggableHandle()
                         )
-                        Text(player.name, modifier = Modifier.padding(start = 8.dp))
                     }
+                }
+                item(key = "add_button") {
+                    AddPlayerCard(onClick = { showPlayerDialog = true })
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-            Text("Starting Score", style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(8.dp))
-            Row {
+            Spacer(Modifier.height(8.dp))
+            OutlinedButton(
+                onClick = { viewModel.randomizePlayerOrder() },
+                enabled = selectedIds.size > 1,
+                modifier = Modifier.fillMaxWidth().height(ACTION_BTN_H),
+                shape = CARD_CORNER
+            ) {
+                Text("Zufällige Reihenfolge", style = MaterialTheme.typography.bodyLarge)
+            }
+
+            Spacer(Modifier.height(24.dp))
+            Text("Startpunkte", style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(8.dp))
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 GameConfig.validStartingScores.forEach { score ->
-                    FilterChip(
-                        selected = startingScore == score,
-                        onClick = { viewModel.setStartingScore(score) },
-                        label = { Text("$score") },
-                        modifier = Modifier.padding(end = 8.dp)
+                    ScoreCard(
+                        score = score,
+                        isSelected = startingScore == score,
+                        onClick = { viewModel.setStartingScore(score) }
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-            Text("Close Condition", style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(8.dp))
-            Row {
-                FilterChip(
-                    selected = closeCondition == CloseCondition.DOUBLE_OUT,
-                    onClick = { viewModel.setCloseCondition(CloseCondition.DOUBLE_OUT) },
-                    label = { Text("Double Out") },
-                    modifier = Modifier.padding(end = 8.dp)
-                )
-                FilterChip(
-                    selected = closeCondition == CloseCondition.SINGLE_OUT,
+            Spacer(Modifier.height(24.dp))
+            Text("Abschluss", style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                CloseConditionCard(
+                    label = "Single Out",
+                    isSelected = closeCondition == CloseCondition.SINGLE_OUT,
                     onClick = { viewModel.setCloseCondition(CloseCondition.SINGLE_OUT) },
-                    label = { Text("Single Out") }
+                    modifier = Modifier.weight(1f)
+                )
+                CloseConditionCard(
+                    label = "Double Out",
+                    isSelected = closeCondition == CloseCondition.DOUBLE_OUT,
+                    onClick = { viewModel.setCloseCondition(CloseCondition.DOUBLE_OUT) },
+                    modifier = Modifier.weight(1f)
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(Modifier.height(24.dp))
             Button(
                 onClick = { viewModel.startGame() },
                 enabled = selectedIds.isNotEmpty(),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().height(ACTION_BTN_H),
+                shape = CARD_CORNER
             ) {
-                Text("Start Game")
+                Text("Spiel starten", style = MaterialTheme.typography.titleMedium)
             }
+        }
+    }
+
+    if (showPlayerDialog) {
+        PlayerSelectionDialog(
+            players = players,
+            selectedIds = selectedIds,
+            onToggle = { viewModel.togglePlayer(it) },
+            onDismiss = { showPlayerDialog = false }
+        )
+    }
+}
+
+@Composable
+private fun PlayerCard(
+    player: PlayerEntity,
+    stats: PlayerStats?,
+    modifier: Modifier = Modifier
+) {
+    // Pick one random stat label per player, stable across recompositions
+    val statLabel = remember(player.id, stats) { randomStatLabel(stats) }
+
+    Card(
+        modifier = modifier.size(144.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        )
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize().padding(8.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = player.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center
+                )
+                if (statLabel != null) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = statLabel,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
+                        textAlign = TextAlign.Center,
+                        maxLines = 1
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun randomStatLabel(stats: PlayerStats?): String? {
+    if (stats == null || stats.gamesPlayed == 0) return null
+    val options = buildList {
+        add("Ø ${String.format("%.1f", stats.avgScorePerRound)} / Aufn.")
+        add("Bestes: ${stats.highestRound}")
+        add("${stats.wins} Siege")
+        add("${stats.gamesPlayed} Spiele")
+        if (stats.totalDartsThrown > 0) add("${stats.totalDartsThrown} Darts")
+    }
+    return options.random()
+}
+
+@Composable
+private fun AddPlayerCard(onClick: () -> Unit) {
+    OutlinedCard(
+        onClick = onClick,
+        modifier = Modifier.size(144.dp)
+    ) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Icon(Icons.Default.Add, contentDescription = "Spieler hinzufügen")
+        }
+    }
+}
+
+@Composable
+private fun ScoreCard(score: Int, isSelected: Boolean, onClick: () -> Unit) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.size(width = 160.dp, height = 112.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer
+            else MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("$score", style = MaterialTheme.typography.headlineMedium)
+        }
+    }
+}
+
+@Composable
+private fun CloseConditionCard(
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        onClick = onClick,
+        modifier = modifier.height(ACTION_BTN_H),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer
+            else MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text(label, style = MaterialTheme.typography.bodyMedium)
         }
     }
 }

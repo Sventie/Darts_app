@@ -21,4 +21,11 @@ interface GameParticipantDao {
 
     @Query("UPDATE game_participants SET placement = :placement WHERE id = :participantId")
     suspend fun updatePlacement(participantId: Long, placement: Int)
+
+    @Query("""
+        SELECT player_id FROM game_participants
+        WHERE game_id = (SELECT id FROM games ORDER BY started_at DESC LIMIT 1)
+        ORDER BY turn_order ASC
+    """)
+    suspend fun getLastGamePlayerIds(): List<Long>
 }

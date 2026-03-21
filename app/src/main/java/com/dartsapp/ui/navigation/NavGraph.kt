@@ -11,7 +11,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.dartsapp.ui.screens.game.GameScreen
-import com.dartsapp.ui.screens.game.GameViewModel
 import com.dartsapp.ui.screens.home.HomeScreen
 import com.dartsapp.ui.screens.players.PlayerManagementScreen
 import com.dartsapp.ui.screens.setup.GameSetupScreen
@@ -55,32 +54,14 @@ fun DartsNavGraph(navController: NavHostController) {
             route = Screen.Game.route,
             arguments = listOf(navArgument("gameId") { type = NavType.LongType })
         ) {
+            val goHome = {
+                navController.navigate(Screen.Home.route) {
+                    popUpTo(Screen.Home.route) { inclusive = true }
+                }
+            }
             GameScreen(
-                onGameOver = { gameId ->
-                    navController.navigate(Screen.GameFinish.createRoute(gameId)) {
-                        popUpTo(Screen.Game.route) { inclusive = true }
-                    }
-                },
-                onAbandonGame = {
-                    navController.navigate(Screen.Home.route) {
-                        popUpTo(Screen.Home.route) { inclusive = true }
-                    }
-                }
-            )
-        }
-
-        composable(
-            route = Screen.GameFinish.route,
-            arguments = listOf(navArgument("gameId") { type = NavType.LongType })
-        ) { backStackEntry ->
-            val gameId = backStackEntry.arguments?.getLong("gameId") ?: 0L
-            com.dartsapp.ui.screens.finish.GameFinishScreen(
-                gameId = gameId,
-                onBackToHome = {
-                    navController.navigate(Screen.Home.route) {
-                        popUpTo(Screen.Home.route) { inclusive = true }
-                    }
-                }
+                onGameOver    = { goHome() },
+                onAbandonGame = { goHome() }
             )
         }
 

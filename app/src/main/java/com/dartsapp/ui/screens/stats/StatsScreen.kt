@@ -34,10 +34,10 @@ fun StatsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Statistics") },
+                title = { Text("Statistik") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
                     }
                 }
             )
@@ -45,7 +45,7 @@ fun StatsScreen(
     ) { padding ->
         if (players.isEmpty()) {
             Text(
-                "No players yet.",
+                "Noch keine Spieler.",
                 modifier = Modifier.padding(padding).padding(16.dp),
                 style = MaterialTheme.typography.bodyMedium
             )

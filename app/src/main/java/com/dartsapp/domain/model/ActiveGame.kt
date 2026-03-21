@@ -14,7 +14,8 @@ data class ActivePlayer(
     val participantId: Long,
     val remainingScore: Int,
     val currentRoundDarts: List<DartInput> = emptyList(),
-    val scoreBeforeRound: Int = 0
+    val scoreBeforeRound: Int = 0,
+    val placement: Int? = null
 )
 
 enum class GameStatus { IN_PROGRESS, FINISHED }

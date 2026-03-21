@@ -11,7 +11,7 @@ import javax.inject.Singleton
 class StatisticsRepository @Inject constructor(
     private val dartThrowDao: DartThrowDao
 ) {
-    fun getPlayerStatsRaw(playerId: Long): Flow<PlayerStatsRaw> =
+    fun getPlayerStatsRaw(playerId: Long): Flow<PlayerStatsRaw?> =
         dartThrowDao.getPlayerStatsRaw(playerId)
 
     fun getFieldFrequency(playerId: Long): Flow<List<FieldFrequencyRow>> =

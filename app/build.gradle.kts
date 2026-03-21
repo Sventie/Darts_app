@@ -72,6 +72,7 @@ dependencies {
     implementation(libs.hilt.navigation.compose)
 
     implementation(libs.coroutines.android)
+    implementation(libs.reorderable)
 
     testImplementation(libs.junit)
     testImplementation(libs.coroutines.test)

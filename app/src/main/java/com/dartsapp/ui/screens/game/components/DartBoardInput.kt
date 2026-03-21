@@ -33,16 +33,18 @@ import kotlin.math.sqrt
 private val BOARD_NUMBERS = listOf(20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5)
 
 // All radii as fractions of the canvas half-width.
-// Board occupies ~83% of canvas so number labels fit around it.
-private const val R_BULLSEYE   = 0.028f  // inner bull  (50 pts)
-private const val R_BULL       = 0.072f  // outer bull  (25 pts)
-private const val R_TRIPLE_IN  = 0.432f  // triple ring inner edge
-private const val R_TRIPLE_OUT = 0.473f  // triple ring outer edge
-private const val R_DOUBLE_IN  = 0.711f  // double ring inner edge
-private const val R_DOUBLE_OUT = 0.752f  // double ring outer edge  (= board playable radius)
-private const val R_LABEL      = 0.860f  // number label radius
+// Proportions match the reference image: wider triple & double rings for easier touch.
+private const val R_BULLSEYE   = 0.048f  // inner bull  (50 pts)
+private const val R_BULL       = 0.120f  // outer bull  (25 pts)
+private const val R_TRIPLE_IN  = 0.336f  // triple ring inner edge
+private const val R_TRIPLE_OUT = 0.432f  // triple ring outer edge  (96dp wide = 2.3× original)
+private const val R_DOUBLE_IN      = 0.680f  // double ring inner edge
+private const val R_DOUBLE_OUT     = 0.800f  // double ring outer edge  (120dp wide = 2.9× original)
+private const val R_LABEL_RING_OUT = 0.920f  // outer edge of the dark number ring
+private const val R_LABEL          = 0.858f  // center of label ring: (0.800 + 0.916) / 2
 
-private val ColBoardBg  = Color(0xFF111111)
+private val ColBoardBg   = Color(0xFF111111)
+private val ColLabelRing = Color(0xFF0D0D0D)
 private val ColBlack    = Color(0xFF1A1A1A)
 private val ColCream    = Color(0xFFD4B483)
 private val ColRed      = Color(0xFFB22222)
@@ -50,6 +52,18 @@ private val ColGreen    = Color(0xFF1B6B2A)
 private val ColBull     = Color(0xFF2E7D32)
 private val ColBullseye = Color(0xFFB71C1C)
 private val ColWire     = Color(0xFFAAAAAA)
+
+@Composable
+fun DartBoardIllustration(modifier: Modifier = Modifier) {
+    val textMeasurer = rememberTextMeasurer()
+    Canvas(modifier = modifier) {
+        val cx     = size.width  / 2f
+        val cy     = size.height / 2f
+        val center = Offset(cx, cy)
+        val R      = size.width  / 2f
+        drawBoard(center, R, textMeasurer)
+    }
+}
 
 @Composable
 fun DartBoardInput(
@@ -87,7 +101,7 @@ fun DartBoardInput(
                     val input: DartInput = when {
                         rNorm < R_BULLSEYE -> DartInput(50, ScoreMultiplier.SINGLE, 50)
                         rNorm < R_BULL     -> DartInput(25, ScoreMultiplier.SINGLE, 25)
-                        rNorm > R_DOUBLE_OUT + 0.01f -> DartInput(0, ScoreMultiplier.SINGLE, 0)
+                        rNorm > R_DOUBLE_OUT        -> DartInput(0, ScoreMultiplier.SINGLE, 0)
                         else -> {
                             val angleDeg   = Math.toDegrees(atan2(dy.toDouble(), dx.toDouble())).toFloat()
                             val boardAngle = (angleDeg + 90f + 360f) % 360f
@@ -106,82 +120,94 @@ fun DartBoardInput(
                 }
             }
     ) {
-        val cx = size.width  / 2f
-        val cy = size.height / 2f
+        val cx     = size.width  / 2f
+        val cy     = size.height / 2f
         val center = Offset(cx, cy)
-        val R = size.width / 2f
+        val R      = size.width  / 2f
 
-        // Dark board background circle
-        drawCircle(color = ColBoardBg, radius = R * R_DOUBLE_OUT + 6f, center = center)
-
-        // 20 segments, 4 rings each
-        for (i in 0 until 20) {
-            val startAngle = -90f + i * 18f - 9f
-            val sweep      = 18f
-            val isEven     = (i % 2 == 0)
-            val colSingle  = if (isEven) ColCream else ColBlack
-            val colScore   = if (isEven) ColRed   else ColGreen
-
-            drawAnnularSector(center, R * R_TRIPLE_IN,  R * R_BULL,       startAngle, sweep, colSingle)
-            drawAnnularSector(center, R * R_TRIPLE_OUT, R * R_TRIPLE_IN,  startAngle, sweep, colScore)
-            drawAnnularSector(center, R * R_DOUBLE_IN,  R * R_TRIPLE_OUT, startAngle, sweep, colSingle)
-            drawAnnularSector(center, R * R_DOUBLE_OUT, R * R_DOUBLE_IN,  startAngle, sweep, colScore)
-        }
-
-        // Bull rings (drawn on top of segments)
-        drawCircle(color = ColBull,     radius = R * R_BULL,     center = center)
-        drawCircle(color = ColBullseye, radius = R * R_BULLSEYE, center = center)
-
-        // Wire: segment divider lines
-        for (i in 0 until 20) {
-            val angleRad = Math.toRadians(-90.0 + i * 18.0 - 9.0)
-            val cosA = cos(angleRad).toFloat()
-            val sinA = sin(angleRad).toFloat()
-            drawLine(
-                color       = ColWire,
-                start       = Offset(cx + R * R_BULL * cosA,       cy + R * R_BULL * sinA),
-                end         = Offset(cx + R * R_DOUBLE_OUT * cosA, cy + R * R_DOUBLE_OUT * sinA),
-                strokeWidth = 2f
-            )
-        }
-
-        // Wire: ring outlines
-        listOf(R_BULL, R_TRIPLE_IN, R_TRIPLE_OUT, R_DOUBLE_IN, R_DOUBLE_OUT).forEach { r ->
-            drawCircle(color = ColWire, radius = R * r, center = center, style = Stroke(2f))
-        }
-        drawCircle(color = ColWire, radius = R * R_BULLSEYE, center = center, style = Stroke(1.5f))
-
-        // Number labels
-        val labelStyle = TextStyle(
-            color      = Color.White,
-            fontSize   = 14.sp,
-            fontWeight = FontWeight.Bold
-        )
-        for (i in 0 until 20) {
-            val number   = BOARD_NUMBERS[i]
-            val angleRad = Math.toRadians(-90.0 + i * 18.0)
-            val labelPos = Offset(
-                cx + (R * R_LABEL * cos(angleRad)).toFloat(),
-                cy + (R * R_LABEL * sin(angleRad)).toFloat()
-            )
-            val measured = textMeasurer.measure("$number", labelStyle)
-            drawText(
-                textMeasurer = textMeasurer,
-                text         = "$number",
-                style        = labelStyle,
-                topLeft      = Offset(
-                    labelPos.x - measured.size.width  / 2f,
-                    labelPos.y - measured.size.height / 2f
-                )
-            )
-        }
+        drawBoard(center, R, textMeasurer)
 
         // Dart markers
-        val markerRadius = R * 0.04f
+        val markerRadius = R * 0.02f
         markers.forEach { pos ->
             drawCircle(color = Color.Red.copy(alpha = markerAlpha),   radius = markerRadius, center = pos)
             drawCircle(color = Color.White.copy(alpha = markerAlpha), radius = markerRadius, center = pos, style = Stroke(2f))
         }
+    }
+}
+
+private fun DrawScope.drawBoard(center: Offset, R: Float, textMeasurer: androidx.compose.ui.text.TextMeasurer) {
+    val cx = center.x
+    val cy = center.y
+
+    // Dark number ring (outermost layer, behind everything else)
+    drawCircle(color = ColLabelRing, radius = R * R_LABEL_RING_OUT, center = center)
+    // Thin wire border around the label ring
+    drawCircle(color = ColWire, radius = R * R_LABEL_RING_OUT, center = center, style = Stroke(2f))
+
+    // Dark board background circle (sits inside the label ring)
+    drawCircle(color = ColBoardBg, radius = R * R_DOUBLE_OUT, center = center)
+
+    // 20 segments, 4 rings each
+    for (i in 0 until 20) {
+        val startAngle = -90f + i * 18f - 9f
+        val sweep      = 18f
+        val isEven     = (i % 2 == 0)
+        val colSingle  = if (isEven) ColCream else ColBlack
+        val colScore   = if (isEven) ColRed   else ColGreen
+
+        drawAnnularSector(center, R * R_TRIPLE_IN,  R * R_BULL,       startAngle, sweep, colSingle)
+        drawAnnularSector(center, R * R_TRIPLE_OUT, R * R_TRIPLE_IN,  startAngle, sweep, colScore)
+        drawAnnularSector(center, R * R_DOUBLE_IN,  R * R_TRIPLE_OUT, startAngle, sweep, colSingle)
+        drawAnnularSector(center, R * R_DOUBLE_OUT, R * R_DOUBLE_IN,  startAngle, sweep, colScore)
+    }
+
+    // Bull rings (drawn on top of segments)
+    drawCircle(color = ColBull,     radius = R * R_BULL,     center = center)
+    drawCircle(color = ColBullseye, radius = R * R_BULLSEYE, center = center)
+
+    // Wire: segment divider lines (extend into label ring)
+    for (i in 0 until 20) {
+        val angleRad = Math.toRadians(-90.0 + i * 18.0 - 9.0)
+        val cosA = cos(angleRad).toFloat()
+        val sinA = sin(angleRad).toFloat()
+        drawLine(
+            color       = ColWire,
+            start       = Offset(cx + R * R_BULL * cosA,           cy + R * R_BULL * sinA),
+            end         = Offset(cx + R * R_LABEL_RING_OUT * cosA, cy + R * R_LABEL_RING_OUT * sinA),
+            strokeWidth = 2f
+        )
+    }
+
+    // Wire: ring outlines
+    listOf(R_BULL, R_TRIPLE_IN, R_TRIPLE_OUT, R_DOUBLE_IN, R_DOUBLE_OUT).forEach { r ->
+        drawCircle(color = ColWire, radius = R * r, center = center, style = Stroke(2f))
+    }
+    drawCircle(color = ColWire, radius = R * R_BULLSEYE, center = center, style = Stroke(1.5f))
+
+    // Number labels
+    val labelStyle = TextStyle(
+        color      = Color.White,
+        fontSize   = 11.sp,
+        fontWeight = FontWeight.Bold
+    )
+    for (i in 0 until 20) {
+        val number   = BOARD_NUMBERS[i]
+        val angleRad = Math.toRadians(-90.0 + i * 18.0)
+        val labelPos = Offset(
+            cx + (R * R_LABEL * cos(angleRad)).toFloat(),
+            cy + (R * R_LABEL * sin(angleRad)).toFloat()
+        )
+        val measured = textMeasurer.measure("$number", labelStyle)
+        drawText(
+            textMeasurer = textMeasurer,
+            text         = "$number",
+            style        = labelStyle,
+            topLeft      = Offset(
+                labelPos.x - measured.size.width  / 2f,
+                labelPos.y - measured.size.height / 2f
+            )
+        )
     }
 }
 

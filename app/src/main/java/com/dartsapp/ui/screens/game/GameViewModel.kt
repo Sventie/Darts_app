@@ -6,9 +6,11 @@ import androidx.lifecycle.viewModelScope
 import com.dartsapp.data.repository.GameRepository
 import com.dartsapp.di.ActiveGameStore
 import com.dartsapp.domain.model.ActiveGame
+import com.dartsapp.domain.model.ActivePlayer
 import com.dartsapp.domain.model.DartInput
 import com.dartsapp.domain.usecase.game.BustResult
 import com.dartsapp.domain.usecase.game.CheckBustUseCase
+import com.dartsapp.domain.usecase.game.CheckoutSuggestion
 import com.dartsapp.domain.usecase.game.ProcessRoundUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -26,6 +28,18 @@ data class BustInfo(
     val remainingBefore: Int
 )
 
+/**
+ * Snapshot of the last committed round used to support cross-turn undo.
+ */
+data class LastCommittedRound(
+    val roundId: Long,
+    val participantId: Long,
+    val playerIndex: Int,
+    val scoreBeforeRound: Int,
+    val darts: List<DartInput>,
+    val roundNumber: Int
+)
+
 sealed class GameUiState {
     object Loading : GameUiState()
     data class Playing(
@@ -35,9 +49,15 @@ sealed class GameUiState {
         val currentRoundDarts: List<DartInput>,
         val roundTotal: Int,
         val projectedScore: Int,
-        val isBust: Boolean
+        val isBust: Boolean,
+        val checkoutSuggestion: List<String>?,
+        val lastCommittedRound: LastCommittedRound?,
+        /** Non-null while the "placement dialog" should be shown. */
+        val playerJustFinished: ActivePlayer? = null,
+        /** True when every player has a placement – only "end game" button shown. */
+        val allPlayersFinished: Boolean = false
     ) : GameUiState()
-    data class GameOver(val gameId: Long, val winnerName: String) : GameUiState()
+    data class GameOver(val gameId: Long) : GameUiState()
     object Abandoned : GameUiState()
     data class Error(val message: String) : GameUiState()
 }
@@ -62,7 +82,7 @@ class GameViewModel @Inject constructor(
     init {
         val activeGame = activeGameStore.get(gameId)
         if (activeGame != null) {
-            _uiState.value = buildPlayingState(activeGame, emptyList())
+            _uiState.value = buildPlayingState(activeGame, emptyList(), lastCommittedRound = null)
         } else {
             _uiState.value = GameUiState.Error("Game not found")
         }
@@ -97,11 +117,17 @@ class GameViewModel @Inject constructor(
             }
             else -> {
                 val roundTotal = darts.sumOf { it.scoreValue }
+                val projected = state.currentPlayerScore - roundTotal
                 _uiState.value = state.copy(
                     currentRoundDarts = darts,
                     roundTotal = roundTotal,
-                    projectedScore = state.currentPlayerScore - roundTotal,
-                    isBust = false
+                    projectedScore = projected,
+                    isBust = false,
+                    checkoutSuggestion = CheckoutSuggestion.suggest(
+                        remaining = projected,
+                        dartsLeft = 3 - darts.size,
+                        closeCondition = state.activeGame.config.closeCondition
+                    )
                 )
             }
         }
@@ -112,16 +138,87 @@ class GameViewModel @Inject constructor(
         _uiState.value = GameUiState.Abandoned
     }
 
+    /** User chose to keep playing after a player finished – advance to the next active player. */
+    fun continueAfterPlacement() {
+        val state = _uiState.value as? GameUiState.Playing ?: return
+        val game = state.activeGame
+        val (nextIdx, newRound) = findNextActivePlayer(game.currentPlayerIndex, game.players)
+        if (nextIdx == -1) return // should not happen; button is hidden when allPlayersFinished
+        val updatedGame = game.copy(
+            currentPlayerIndex = nextIdx,
+            roundNumber = if (newRound) game.roundNumber + 1 else game.roundNumber
+        )
+        _uiState.value = buildPlayingState(updatedGame, emptyList(), null)
+    }
+
+    /** User chose to end the game from the placement dialog. */
+    fun endGame() {
+        activeGameStore.remove(gameId)
+        _uiState.value = GameUiState.GameOver(gameId = gameId)
+    }
+
+    /**
+     * Undo the last dart.
+     *
+     * - If darts have been entered this turn: remove the last dart (in-round undo).
+     * - Otherwise: undo the entire last committed round (cross-turn undo), reverting
+     *   the previous player's score and removing the round from the database so
+     *   statistics stay accurate.
+     */
     fun onUndoLastDart() {
         val state = _uiState.value as? GameUiState.Playing ?: return
-        if (state.currentRoundDarts.isEmpty()) return
-        val darts = state.currentRoundDarts.dropLast(1)
-        val roundTotal = darts.sumOf { it.scoreValue }
-        _uiState.value = state.copy(
-            currentRoundDarts = darts,
-            roundTotal = roundTotal,
-            projectedScore = state.currentPlayerScore - roundTotal,
-            isBust = false
+
+        if (state.currentRoundDarts.isNotEmpty()) {
+            // In-round undo – no DB changes needed
+            val darts = state.currentRoundDarts.dropLast(1)
+            val roundTotal = darts.sumOf { it.scoreValue }
+            val projected = state.currentPlayerScore - roundTotal
+            _uiState.value = state.copy(
+                currentRoundDarts = darts,
+                roundTotal = roundTotal,
+                projectedScore = projected,
+                isBust = false,
+                checkoutSuggestion = CheckoutSuggestion.suggest(
+                    remaining = projected,
+                    dartsLeft = 3 - darts.size,
+                    closeCondition = state.activeGame.config.closeCondition
+                )
+            )
+        } else if (state.lastCommittedRound != null) {
+            viewModelScope.launch { undoLastCommittedRound(state) }
+        }
+    }
+
+    private suspend fun undoLastCommittedRound(state: GameUiState.Playing) {
+        val last = state.lastCommittedRound ?: return
+
+        // Revert DB: delete round (CASCADE removes dart_throws) and restore score
+        gameRepository.undoRound(last.roundId, last.participantId, last.scoreBeforeRound)
+
+        // Restore the player's score in the in-memory game state
+        val activeGame = state.activeGame
+        val restoredPlayers = activeGame.players.mapIndexed { idx, player ->
+            if (idx == last.playerIndex) {
+                player.copy(
+                    remainingScore = last.scoreBeforeRound,
+                    scoreBeforeRound = last.scoreBeforeRound,
+                    currentRoundDarts = emptyList()
+                )
+            } else player
+        }
+
+        val restoredGame = activeGame.copy(
+            players = restoredPlayers,
+            currentPlayerIndex = last.playerIndex,
+            roundNumber = last.roundNumber
+        )
+
+        // Rebuild state with the last dart already removed so the single undo press
+        // immediately removes that dart rather than just switching back to the player.
+        _uiState.value = buildPlayingState(
+            game = restoredGame,
+            darts = last.darts.dropLast(1),
+            lastCommittedRound = null
         )
     }
 
@@ -143,16 +240,43 @@ class GameViewModel @Inject constructor(
         )
 
         if (result.isWin) {
-            gameRepository.finishGame(activeGame.gameId, currentPlayer.playerId)
-            gameRepository.updatePlacement(currentPlayer.participantId, 1)
-            _uiState.value = GameUiState.GameOver(
-                gameId = activeGame.gameId,
-                winnerName = currentPlayer.playerName
+            val placement = activeGame.players.count { it.placement != null } + 1
+            // First-place finish finalises the game in the DB
+            if (placement == 1) {
+                gameRepository.finishGame(activeGame.gameId, currentPlayer.playerId)
+            }
+            gameRepository.updatePlacement(currentPlayer.participantId, placement)
+
+            val finishedPlayer = currentPlayer.copy(
+                remainingScore = 0,
+                currentRoundDarts = emptyList(),
+                scoreBeforeRound = 0,
+                placement = placement
+            )
+            val updatedPlayers = activeGame.players.mapIndexed { idx, player ->
+                if (idx == activeGame.currentPlayerIndex) finishedPlayer else player
+            }
+            val allDone = updatedPlayers.all { it.placement != null }
+            val updatedGame = activeGame.copy(players = updatedPlayers)
+
+            _uiState.value = buildPlayingState(updatedGame, emptyList(), null).copy(
+                playerJustFinished = finishedPlayer,
+                allPlayersFinished = allDone
             )
             return
         }
 
-        // Advance to next player
+        // Capture the completed round for cross-turn undo
+        val committed = LastCommittedRound(
+            roundId = result.roundId,
+            participantId = currentPlayer.participantId,
+            playerIndex = activeGame.currentPlayerIndex,
+            scoreBeforeRound = currentPlayer.scoreBeforeRound,
+            darts = darts,
+            roundNumber = activeGame.roundNumber
+        )
+
+        // Update the current player's score
         val updatedPlayers = activeGame.players.mapIndexed { idx, player ->
             if (idx == activeGame.currentPlayerIndex) {
                 player.copy(
@@ -163,8 +287,9 @@ class GameViewModel @Inject constructor(
             } else player
         }
 
-        val nextIndex = (activeGame.currentPlayerIndex + 1) % activeGame.players.size
-        val nextRound = if (nextIndex == 0) activeGame.roundNumber + 1 else activeGame.roundNumber
+        // Advance to next active (non-finished) player
+        val (nextIndex, newRound) = findNextActivePlayer(activeGame.currentPlayerIndex, updatedPlayers)
+        val nextRound = if (newRound) activeGame.roundNumber + 1 else activeGame.roundNumber
 
         val updatedGame = activeGame.copy(
             players = updatedPlayers,
@@ -172,20 +297,47 @@ class GameViewModel @Inject constructor(
             roundNumber = nextRound
         )
 
-        _uiState.value = buildPlayingState(updatedGame, emptyList())
+        _uiState.value = buildPlayingState(updatedGame, emptyList(), lastCommittedRound = committed)
     }
 
-    private fun buildPlayingState(game: ActiveGame, darts: List<DartInput>): GameUiState.Playing {
+    /**
+     * Returns the index of the next player without a placement, and whether we crossed
+     * index 0 (= a new round starts).
+     */
+    private fun findNextActivePlayer(currentIndex: Int, players: List<ActivePlayer>): Pair<Int, Boolean> {
+        val size = players.size
+        var idx = currentIndex
+        var crossedOrigin = false
+        for (i in 1..size) {
+            idx = (idx + 1) % size
+            if (idx == 0) crossedOrigin = true
+            if (players[idx].placement == null) return Pair(idx, crossedOrigin)
+        }
+        return Pair(-1, false)
+    }
+
+    private fun buildPlayingState(
+        game: ActiveGame,
+        darts: List<DartInput>,
+        lastCommittedRound: LastCommittedRound?
+    ): GameUiState.Playing {
         val player = game.currentPlayer
         val roundTotal = darts.sumOf { it.scoreValue }
+        val projected = player.remainingScore - roundTotal
         return GameUiState.Playing(
             activeGame = game,
             currentPlayerName = player.playerName,
             currentPlayerScore = player.remainingScore,
             currentRoundDarts = darts,
             roundTotal = roundTotal,
-            projectedScore = player.remainingScore - roundTotal,
-            isBust = false
+            projectedScore = projected,
+            isBust = false,
+            checkoutSuggestion = CheckoutSuggestion.suggest(
+                remaining = projected,
+                dartsLeft = 3 - darts.size,
+                closeCondition = game.config.closeCondition
+            ),
+            lastCommittedRound = lastCommittedRound
         )
     }
 }
