@@ -62,5 +62,5 @@ interface DartThrowDao {
         WHERE p.id = :playerId
         GROUP BY p.id
     """)
-    fun getPlayerStatsRaw(playerId: Long): Flow<PlayerStatsRaw>
+    fun getPlayerStatsRaw(playerId: Long): Flow<PlayerStatsRaw?>
 }
