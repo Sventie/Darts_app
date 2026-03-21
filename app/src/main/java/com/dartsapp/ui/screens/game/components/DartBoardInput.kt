@@ -126,7 +126,7 @@ fun DartBoardInput(
         drawBoard(center, R, textMeasurer)
 
         // Dart markers
-        val markerRadius = R * 0.04f
+        val markerRadius = R * 0.02f
         markers.forEach { pos ->
             drawCircle(color = Color.Red.copy(alpha = markerAlpha),   radius = markerRadius, center = pos)
             drawCircle(color = Color.White.copy(alpha = markerAlpha), radius = markerRadius, center = pos, style = Stroke(2f))
