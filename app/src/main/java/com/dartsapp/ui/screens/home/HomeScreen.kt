@@ -23,8 +23,7 @@ import androidx.compose.ui.unit.dp
 fun HomeScreen(
     onNavigatePlayers: () -> Unit,
     onNavigateSetup: () -> Unit,
-    onNavigateStats: () -> Unit,
-    onNavigateSpider: () -> Unit = {}
+    onNavigateStats: () -> Unit
 ) {
     Scaffold { padding ->
         BoxWithConstraints(
@@ -35,13 +34,13 @@ fun HomeScreen(
             if (maxWidth > maxHeight) {
                 LandscapeLayout(
                     onNavigateSetup = onNavigateSetup,
-                    onNavigateSpider = onNavigateSpider,
+                    onNavigatePlayers = onNavigatePlayers,
                     onNavigateStats = onNavigateStats
                 )
             } else {
                 PortraitLayout(
                     onNavigateSetup = onNavigateSetup,
-                    onNavigateSpider = onNavigateSpider,
+                    onNavigatePlayers = onNavigatePlayers,
                     onNavigateStats = onNavigateStats
                 )
             }
@@ -52,7 +51,7 @@ fun HomeScreen(
 @Composable
 private fun LandscapeLayout(
     onNavigateSetup: () -> Unit,
-    onNavigateSpider: () -> Unit,
+    onNavigatePlayers: () -> Unit,
     onNavigateStats: () -> Unit
 ) {
     Column(
@@ -90,7 +89,7 @@ private fun LandscapeLayout(
             )
             MenuCard(
                 label = "Spieler",
-                onClick = onNavigateSpider,
+                onClick = onNavigatePlayers,
                 modifier = Modifier.weight(1f)
             )
             MenuCard(
@@ -105,7 +104,7 @@ private fun LandscapeLayout(
 @Composable
 private fun PortraitLayout(
     onNavigateSetup: () -> Unit,
-    onNavigateSpider: () -> Unit,
+    onNavigatePlayers: () -> Unit,
     onNavigateStats: () -> Unit
 ) {
     Column(
@@ -129,7 +128,7 @@ private fun PortraitLayout(
         )
         MenuCard(
             label = "Spieler",
-            onClick = onNavigateSpider,
+            onClick = onNavigatePlayers,
             modifier = Modifier.fillMaxWidth()
         )
         MenuCard(
