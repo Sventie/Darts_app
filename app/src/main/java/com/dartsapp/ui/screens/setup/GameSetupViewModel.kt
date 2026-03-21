@@ -69,6 +69,16 @@ class GameSetupViewModel @Inject constructor(
         }
     }
 
+    fun reorderPlayers(fromIndex: Int, toIndex: Int) {
+        val current = _selectedPlayerIds.value.toMutableList()
+        current.add(toIndex, current.removeAt(fromIndex))
+        _selectedPlayerIds.value = current
+    }
+
+    fun randomizePlayerOrder() {
+        _selectedPlayerIds.value = _selectedPlayerIds.value.shuffled()
+    }
+
     fun clearStartedGame() {
         _startedGameId.value = null
     }
