@@ -6,12 +6,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -31,11 +33,17 @@ import com.dartsapp.domain.model.DartInput
 
 private enum class InputMode { KEYPAD, BOARD }
 
-/** Height for toggle/chip-style buttons (mode select, multiplier, special). */
-private val BTN_H: Dp = 72.dp
+/** Corner radius matching the player score cards. */
+private val BTN_CORNER = RoundedCornerShape(8.dp)
 
-/** Height for number grid cells. */
-private val NUM_H: Dp = 96.dp
+/** Height for mode/multiplier/special buttons. */
+private val BTN_H: Dp = 48.dp
+
+/** Larger gap between logical button groups (mode→multiplier, multiplier→grid). */
+private val GROUP_GAP: Dp = 16.dp
+
+/** Smaller gap within a group or between grid and special row. */
+private val INNER_GAP: Dp = 6.dp
 
 @Composable
 fun ScoreInputKeypad(
@@ -48,7 +56,10 @@ fun ScoreInputKeypad(
     var inputMode by remember { mutableStateOf(InputMode.KEYPAD) }
     var selectedMultiplier by remember { mutableStateOf(ScoreMultiplier.SINGLE) }
 
-    Column(modifier = modifier.padding(horizontal = 8.dp)) {
+    // fillMaxHeight so the inner weight(1f) on the grid can resolve against a bounded height.
+    // The parent always provides a bounded height: in landscape via fillMaxHeight().weight(0.58f),
+    // in portrait via fillMaxWidth().weight(1f).
+    Column(modifier = modifier.fillMaxHeight().padding(horizontal = 8.dp)) {
 
         // ── Input mode toggle ──────────────────────────────────────────
         Row(
@@ -69,12 +80,12 @@ fun ScoreInputKeypad(
             )
         }
 
-        Spacer(modifier = Modifier.height(6.dp))
-
         when (inputMode) {
 
             // ── Keypad mode ───────────────────────────────────────────
             InputMode.KEYPAD -> {
+                Spacer(modifier = Modifier.height(GROUP_GAP))
+
                 // Multiplier row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -90,13 +101,13 @@ fun ScoreInputKeypad(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(GROUP_GAP))
 
-                // Number grid 1-20
+                // Number grid 1-20 – takes all remaining height via weight
                 val numbers = (1..20).toList()
                 LazyVerticalGrid(
                     columns               = GridCells.Fixed(5),
-                    modifier              = Modifier.fillMaxWidth().height(NUM_H * 4 + 4.dp * 3),
+                    modifier              = Modifier.fillMaxWidth().weight(1f),
                     verticalArrangement   = Arrangement.spacedBy(4.dp),
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
@@ -108,7 +119,8 @@ fun ScoreInputKeypad(
                                 onDartEntered(DartInput(number, eff, number * eff.value))
                                 selectedMultiplier = ScoreMultiplier.SINGLE
                             },
-                            modifier       = Modifier.height(NUM_H),
+                            shape          = BTN_CORNER,
+                            modifier       = Modifier.fillMaxHeight(),
                             contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
                         ) {
                             Text("$number", style = MaterialTheme.typography.titleMedium)
@@ -116,7 +128,7 @@ fun ScoreInputKeypad(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(INNER_GAP))
 
                 // Special buttons row
                 Row(
@@ -129,6 +141,7 @@ fun ScoreInputKeypad(
                             onDartEntered(DartInput(0, ScoreMultiplier.SINGLE, 0))
                             selectedMultiplier = ScoreMultiplier.SINGLE
                         },
+                        shape    = BTN_CORNER,
                         modifier = Modifier.weight(1f).height(BTN_H)
                     ) { Text("Daneben") }
 
@@ -138,6 +151,7 @@ fun ScoreInputKeypad(
                             onDartEntered(DartInput(25, mult, 25 * mult.value))
                             selectedMultiplier = ScoreMultiplier.SINGLE
                         },
+                        shape    = BTN_CORNER,
                         modifier = Modifier.weight(1f).height(BTN_H)
                     ) { Text("Bull") }
 
@@ -146,12 +160,14 @@ fun ScoreInputKeypad(
                             onDartEntered(DartInput(50, ScoreMultiplier.SINGLE, 50))
                             selectedMultiplier = ScoreMultiplier.SINGLE
                         },
+                        shape    = BTN_CORNER,
                         modifier = Modifier.weight(1f).height(BTN_H)
                     ) { Text("Bullseye") }
 
                     Button(
                         onClick  = onUndo,
                         enabled  = canUndo,
+                        shape    = BTN_CORNER,
                         colors   = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                         modifier = Modifier.weight(1f).height(BTN_H)
                     ) { Text("Rückgängig") }
@@ -160,9 +176,11 @@ fun ScoreInputKeypad(
 
             // ── Board mode ────────────────────────────────────────────
             InputMode.BOARD -> {
+                Spacer(modifier = Modifier.height(INNER_GAP))
+
                 Box(
-                    modifier          = Modifier.fillMaxWidth(),
-                    contentAlignment  = Alignment.Center
+                    modifier         = Modifier.fillMaxWidth().weight(1f),
+                    contentAlignment = Alignment.Center
                 ) {
                     DartBoardInput(
                         onDartEntered = onDartEntered,
@@ -171,16 +189,17 @@ fun ScoreInputKeypad(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(INNER_GAP))
 
                 Row(
                     modifier              = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
                 ) {
                     Button(
-                        onClick = onUndo,
-                        enabled = canUndo,
-                        colors  = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                        onClick  = onUndo,
+                        enabled  = canUndo,
+                        shape    = BTN_CORNER,
+                        colors   = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                         modifier = Modifier.height(BTN_H)
                     ) { Text("Rückgängig") }
                 }
@@ -190,7 +209,8 @@ fun ScoreInputKeypad(
 }
 
 /**
- * A toggle button that renders filled (selected) or outlined (unselected).
+ * A toggle button with card-like rounded corners.
+ * Renders filled when selected, outlined otherwise.
  */
 @Composable
 private fun ToggleButton(
@@ -202,6 +222,7 @@ private fun ToggleButton(
     if (selected) {
         Button(
             onClick  = onClick,
+            shape    = BTN_CORNER,
             modifier = modifier
         ) {
             Text(label, style = MaterialTheme.typography.bodyMedium)
@@ -209,6 +230,7 @@ private fun ToggleButton(
     } else {
         OutlinedButton(
             onClick  = onClick,
+            shape    = BTN_CORNER,
             modifier = modifier
         ) {
             Text(label, style = MaterialTheme.typography.bodyMedium)

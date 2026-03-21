@@ -5,11 +5,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -25,9 +28,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -47,7 +50,6 @@ import com.dartsapp.ui.screens.game.components.BustDialog
 import com.dartsapp.ui.screens.game.components.PlayerScoreCard
 import com.dartsapp.ui.screens.game.components.ScoreInputKeypad
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GameScreen(
     onGameOver: (Long) -> Unit,
@@ -95,16 +97,29 @@ fun GameScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Darts") },
-                actions = {
+            Surface(
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 3.dp
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .windowInsetsPadding(WindowInsets.statusBars)
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "Darts",
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.weight(1f)
+                    )
                     if (uiState is GameUiState.Playing) {
                         IconButton(onClick = { showAbandonDialog = true }) {
                             Icon(Icons.Default.Close, contentDescription = "Spiel abbrechen")
                         }
                     }
                 }
-            )
+            }
         }
     ) { padding ->
         when (val state = uiState) {
@@ -184,7 +199,7 @@ fun GameScreen(
                             onDartEntered = viewModel::onDartEntered,
                             onUndo = viewModel::onUndoLastDart,
                             canUndo = state.currentRoundDarts.isNotEmpty() || state.lastCommittedRound != null,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth().weight(1f)
                         )
                     }
                 }
