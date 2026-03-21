@@ -301,41 +301,32 @@ private fun DartsInfoCard(
             else MaterialTheme.colorScheme.surfaceVariant
         )
     ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+        Row(
+            modifier = Modifier.padding(12.dp).fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "Würfe",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            // Individual dart scores
-            val dartLabels = darts.joinToString("  –  ") { it.scoreValue.toString() }
-            Text(
-                text = dartLabels,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-            HorizontalDivider(modifier = Modifier.padding(vertical = 2.dp))
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            // Left: label + dart values
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    text = "Gesamt",
+                    text = "Würfe",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                val dartLabels = darts.joinToString("  –  ") { it.scoreValue.toString() }
                 Text(
-                    text = "$total",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = if (isBust) MaterialTheme.colorScheme.error
-                    else MaterialTheme.colorScheme.onSurface
+                    text = dartLabels,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
                 )
             }
+            // Right: total score
+            Text(
+                text = "$total",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = if (isBust) MaterialTheme.colorScheme.error
+                else MaterialTheme.colorScheme.onSurface
+            )
         }
     }
 }

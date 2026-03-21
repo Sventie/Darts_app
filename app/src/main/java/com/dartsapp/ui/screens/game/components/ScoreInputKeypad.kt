@@ -40,7 +40,7 @@ private val BTN_CORNER = RoundedCornerShape(8.dp)
 private val BTN_H: Dp = 48.dp
 
 /** Larger gap between logical button groups (mode→multiplier, multiplier→grid). */
-private val GROUP_GAP: Dp = 16.dp
+private val GROUP_GAP: Dp = 20.dp
 
 /** Smaller gap within a group or between grid and special row. */
 private val INNER_GAP: Dp = 6.dp
@@ -59,7 +59,7 @@ fun ScoreInputKeypad(
     // fillMaxHeight so the inner weight(1f) on the grid can resolve against a bounded height.
     // The parent always provides a bounded height: in landscape via fillMaxHeight().weight(0.58f),
     // in portrait via fillMaxWidth().weight(1f).
-    Column(modifier = modifier.fillMaxHeight().padding(horizontal = 8.dp)) {
+    Column(modifier = modifier.fillMaxHeight().padding(horizontal = 8.dp, vertical = 8.dp)) {
 
         // ── Input mode toggle ──────────────────────────────────────────
         Row(
@@ -128,7 +128,7 @@ fun ScoreInputKeypad(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(INNER_GAP))
+                Spacer(modifier = Modifier.height(GROUP_GAP))
 
                 // Special buttons row
                 Row(
