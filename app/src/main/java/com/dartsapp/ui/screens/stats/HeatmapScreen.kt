@@ -21,6 +21,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -62,8 +63,10 @@ fun HeatmapScreen(
     val gameCount    by viewModel.gameCount.collectAsState()
     val fromGame     by viewModel.fromGame.collectAsState()
     val toGame       by viewModel.toGame.collectAsState()
+    val dispersion   by viewModel.dispersion.collectAsState()
 
     var playerDialogOpen by remember { mutableStateOf(false) }
+    var showHeatmap      by remember { mutableStateOf(true) }
 
     // Clamp displayed "to" value against the actual game count
     val effectiveTo = if (toGame == Int.MAX_VALUE) gameCount else toGame.coerceAtMost(gameCount)
@@ -108,6 +111,36 @@ fun HeatmapScreen(
                         text     = playerName.ifEmpty { "Spieler wählen" },
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                HorizontalDivider()
+
+                Text(
+                    "Ansicht",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                androidx.compose.foundation.layout.Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilterChip(
+                        selected = showHeatmap,
+                        onClick  = { showHeatmap = true },
+                        label    = { Text("Heatmap") }
+                    )
+                    FilterChip(
+                        selected = !showHeatmap,
+                        onClick  = { showHeatmap = false },
+                        label    = { Text("Streuung") }
+                    )
+                }
+
+                if (!showHeatmap) {
+                    Text(
+                        text  = "Streuung: ${"%.2f".format(dispersion)}",
+                        style = MaterialTheme.typography.bodyMedium
                     )
                 }
 
@@ -175,17 +208,25 @@ fun HeatmapScreen(
 
             VerticalDivider(modifier = Modifier.fillMaxHeight().padding(vertical = 8.dp))
 
-            // ── Right: heatmap ────────────────────────────────────────────
+            // ── Right: heatmap / dispersion ──────────────────────────────
             Box(
                 modifier         = Modifier.fillMaxHeight().weight(0.68f),
                 contentAlignment = Alignment.Center
             ) {
-                DartBoardHeatmap(
-                    hitPositions = hitPositions,
-                    modifier     = Modifier
-                        .fillMaxHeight(0.92f)
-                        .aspectRatio(1f)
-                )
+                val boardModifier = Modifier
+                    .fillMaxHeight(0.92f)
+                    .aspectRatio(1f)
+                if (showHeatmap) {
+                    DartBoardHeatmap(
+                        hitPositions = hitPositions,
+                        modifier     = boardModifier
+                    )
+                } else {
+                    DartBoardDispersion(
+                        dispersion = dispersion,
+                        modifier   = boardModifier
+                    )
+                }
             }
         }
 

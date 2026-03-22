@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import javax.inject.Inject
+import kotlin.math.sqrt
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
@@ -55,6 +56,7 @@ class HeatmapViewModel @Inject constructor(
     getPlayersUseCase: GetPlayersUseCase,
     private val getHeatPositionsUseCase: GetHeatPositionsUseCase
 ) : ViewModel() {
+    private companion object { const val R_DOUBLE_OUT = 0.894f }
 
     private val initialPlayerId: Long = checkNotNull(savedStateHandle["playerId"])
 
@@ -84,6 +86,16 @@ class HeatmapViewModel @Inject constructor(
         }
         .flatMapLatest { (pid, from, to) -> getHeatPositionsUseCase(pid, from, to) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val dispersion: StateFlow<Float> = hitPositions
+        .map { positions ->
+            if (positions.isEmpty()) 0f
+            else {
+                val meanSq = positions.map { it.nx * it.nx + it.ny * it.ny }.average().toFloat()
+                (sqrt(meanSq) / R_DOUBLE_OUT).coerceIn(0f, 1f)
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0f)
 
     fun selectPlayer(playerId: Long) {
         _selectedPlayerId.value = playerId

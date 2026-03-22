@@ -161,6 +161,35 @@ fun DartBoardHeatmap(
     }
 }
 
+/**
+ * Dartboard with a dispersion circle. The circle is centered at the bullseye
+ * and has a radius proportional to [dispersion] (0=tiny, 1=double ring edge).
+ */
+@Composable
+fun DartBoardDispersion(
+    dispersion: Float,
+    modifier:   Modifier = Modifier
+) {
+    val textMeasurer = rememberTextMeasurer()
+    Canvas(modifier = modifier) {
+        val R      = size.width / 2f
+        val cx     = size.width  / 2f
+        val cy     = size.height / 2f
+        val center = Offset(cx, cy)
+
+        drawCircle(color = ColLabelRing, radius = R * R_LABEL_RING_OUT, center = center)
+        drawCircle(color = ColBoardBg,   radius = R * R_DOUBLE_OUT,     center = center)
+
+        val circleRadius = dispersion * R_DOUBLE_OUT * R
+        if (circleRadius > 0f) {
+            drawCircle(color = Color(0x440088FF), radius = circleRadius, center = center)
+            drawCircle(color = Color(0xCC0088FF), radius = circleRadius, center = center, style = Stroke(4f))
+        }
+
+        drawBoardWiresAndLabels(center, R, textMeasurer)
+    }
+}
+
 private fun DrawScope.drawBoardWiresAndLabels(
     center:       Offset,
     R:            Float,
