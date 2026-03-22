@@ -180,7 +180,10 @@ fun DartBoardDispersion(
         drawCircle(color = ColLabelRing, radius = R * R_LABEL_RING_OUT, center = center)
         drawCircle(color = ColBoardBg,   radius = R * R_DOUBLE_OUT,     center = center)
 
-        val circleRadius = dispersion * R_DOUBLE_OUT * R
+        val minRadius    = R * 0.02f
+        val circleRadius = if (dispersion > 0f)
+            minRadius + dispersion * (R_DOUBLE_OUT * R - minRadius)
+        else 0f
         if (circleRadius > 0f) {
             drawCircle(color = Color(0x440088FF), radius = circleRadius, center = center)
             drawCircle(color = Color(0xCC0088FF), radius = circleRadius, center = center, style = Stroke(4f))
