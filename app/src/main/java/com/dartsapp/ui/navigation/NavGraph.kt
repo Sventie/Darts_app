@@ -10,12 +10,12 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+
 import com.dartsapp.ui.screens.game.GameScreen
 import com.dartsapp.ui.screens.home.HomeScreen
 import com.dartsapp.ui.screens.players.PlayerManagementScreen
 import com.dartsapp.ui.screens.setup.GameSetupScreen
 import com.dartsapp.ui.screens.setup.GameSetupViewModel
-import com.dartsapp.ui.screens.stats.StatsDetailScreen
 import com.dartsapp.ui.screens.stats.StatsScreen
 
 @Composable
@@ -66,19 +66,7 @@ fun DartsNavGraph(navController: NavHostController) {
         }
 
         composable(Screen.Stats.route) {
-            StatsScreen(
-                onBack = { navController.popBackStack() },
-                onSelectPlayer = { playerId ->
-                    navController.navigate(Screen.StatsDetail.createRoute(playerId))
-                }
-            )
-        }
-
-        composable(
-            route = Screen.StatsDetail.route,
-            arguments = listOf(navArgument("playerId") { type = NavType.LongType })
-        ) {
-            StatsDetailScreen(onBack = { navController.popBackStack() })
+            StatsScreen(onBack = { navController.popBackStack() })
         }
     }
 }
