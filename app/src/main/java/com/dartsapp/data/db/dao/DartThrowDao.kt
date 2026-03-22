@@ -157,6 +157,36 @@ interface DartThrowDao {
     fun getAvgScorePerRound(playerId: Long): Flow<Double>
 
     @Query("""
+        SELECT COUNT(*)
+        FROM game_participants gp
+        JOIN games g ON g.id = gp.game_id
+        WHERE gp.player_id = :playerId
+          AND g.finished_at IS NOT NULL
+    """)
+    fun getGameCountForPlayer(playerId: Long): Flow<Int>
+
+    @Query("""
+        SELECT dt.tap_x, dt.tap_y
+        FROM dart_throws dt
+        JOIN rounds r ON r.id = dt.round_id
+        JOIN game_participants gp ON gp.id = r.game_participant_id
+        WHERE gp.player_id = :playerId
+          AND dt.is_padding = 0
+          AND dt.tap_x IS NOT NULL
+          AND dt.tap_y IS NOT NULL
+          AND gp.game_id IN (
+              SELECT gp2.game_id
+              FROM game_participants gp2
+              JOIN games g2 ON g2.id = gp2.game_id
+              WHERE gp2.player_id = :playerId
+                AND g2.finished_at IS NOT NULL
+              ORDER BY g2.started_at ASC
+              LIMIT :count OFFSET :offset
+          )
+    """)
+    fun getTapPositionsForPlayerInRange(playerId: Long, count: Int, offset: Int): Flow<List<TapPositionRow>>
+
+    @Query("""
         SELECT
             COALESCE(MAX(round_total), 0) as highestRound,
             COUNT(CASE WHEN round_total < 10 THEN 1 END) as roundsUnder10,

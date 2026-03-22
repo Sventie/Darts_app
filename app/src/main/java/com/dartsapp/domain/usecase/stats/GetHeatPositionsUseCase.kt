@@ -10,8 +10,27 @@ class GetHeatPositionsUseCase @Inject constructor(
 ) {
     data class HitPosition(val nx: Float, val ny: Float)
 
-    operator fun invoke(playerId: Long): Flow<List<HitPosition>> =
-        dartThrowDao.getTapPositionsForPlayer(playerId).map { rows ->
-            rows.map { HitPosition(it.tapX, it.tapY) }
-        }
+    /**
+     * Returns tap positions for [playerId], optionally restricted to games
+     * [fromGame]..[toGame] ordered chronologically (1-based, inclusive).
+     * Pass the defaults to get all games.
+     */
+    operator fun invoke(
+        playerId: Long,
+        fromGame: Int = 1,
+        toGame: Int   = Int.MAX_VALUE
+    ): Flow<List<HitPosition>> {
+        val offset = (fromGame - 1).coerceAtLeast(0)
+        val count  = if (toGame == Int.MAX_VALUE) Int.MAX_VALUE
+                     else (toGame - fromGame + 1).coerceAtLeast(0)
+
+        return if (fromGame == 1 && toGame == Int.MAX_VALUE) {
+            dartThrowDao.getTapPositionsForPlayer(playerId)
+        } else {
+            dartThrowDao.getTapPositionsForPlayerInRange(playerId, count, offset)
+        }.map { rows -> rows.map { HitPosition(it.tapX, it.tapY) } }
+    }
+
+    fun gameCount(playerId: Long): Flow<Int> =
+        dartThrowDao.getGameCountForPlayer(playerId)
 }
