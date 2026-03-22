@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -100,14 +99,14 @@ fun ScoreInputKeypad(
 
                 Spacer(modifier = Modifier.height(GROUP_GAP))
 
-                // Number grid 1-20: 4 rows × 5 cols, each button square via aspectRatio(1f)
+                // Number grid 1-20: 4 rows × 5 cols, scales to fill all remaining height
                 Column(
-                    modifier            = Modifier.fillMaxWidth(),
+                    modifier            = Modifier.fillMaxWidth().weight(1f),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     (1..20).chunked(5).forEach { row ->
                         Row(
-                            modifier              = Modifier.fillMaxWidth(),
+                            modifier              = Modifier.fillMaxWidth().weight(1f),
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             row.forEach { number ->
@@ -119,10 +118,10 @@ fun ScoreInputKeypad(
                                         selectedMultiplier = ScoreMultiplier.SINGLE
                                     },
                                     shape          = BTN_CORNER,
-                                    modifier       = Modifier.weight(1f).aspectRatio(1f),
+                                    modifier       = Modifier.weight(1f).fillMaxHeight(),
                                     contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
                                 ) {
-                                    Text("$number", style = MaterialTheme.typography.titleMedium)
+                                    Text("$number", style = MaterialTheme.typography.titleLarge)
                                 }
                             }
                         }
@@ -131,7 +130,7 @@ fun ScoreInputKeypad(
 
                 Spacer(modifier = Modifier.height(GROUP_GAP))
 
-                // Special buttons – directly below grid, same gap as multiplier row above
+                // Special buttons – directly below grid
                 val isSingle = selectedMultiplier == ScoreMultiplier.SINGLE
                 Row(
                     modifier              = Modifier.fillMaxWidth(),
@@ -168,8 +167,7 @@ fun ScoreInputKeypad(
                     ) { Text("Bullseye") }
                 }
 
-                // Remaining space goes here, pushing Rückgängig to the bottom
-                Spacer(modifier = Modifier.weight(1f))
+                Spacer(modifier = Modifier.height(GROUP_GAP))
 
                 // Rückgängig at the very bottom-end
                 Row(
