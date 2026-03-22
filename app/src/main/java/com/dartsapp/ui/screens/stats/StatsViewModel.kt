@@ -37,7 +37,8 @@ class StatsOverviewViewModel @Inject constructor(
                         avgScorePerDart = 0.0, avgScorePerRound = 0.0, first9Average = 0.0,
                         highestCheckout = 0, bustCount = 0, checkoutAttempts = 0,
                         highestRound = 0, roundsUnder10 = 0, totalRounds = 0,
-                        totalDartsThrown = 0, doubleHits = 0, tripleHits = 0, outOfBounceCount = 0
+                        totalDartsThrown = 0, doubleHits = 0, tripleHits = 0, outOfBounceCount = 0,
+                        bestBuddyName = null, rivalName = null, easyWinName = null
                     )
                 }
             }) { it.toList() }

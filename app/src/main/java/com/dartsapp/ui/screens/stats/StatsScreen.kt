@@ -77,7 +77,10 @@ private val STAT_CATEGORIES = listOf(
     StatCategory("Triple-Quote")      { pct(it.tripleHits, it.totalDartsThrown) },
     StatCategory("Out of Bounce")     { pct(it.outOfBounceCount, it.totalDartsThrown) },
     StatCategory("Runden < 10")       { pct(it.roundsUnder10, it.totalRounds) },
-    StatCategory("Bust-Quote")        { pct(it.bustCount, it.checkoutAttempts) }
+    StatCategory("Bust-Quote")        { pct(it.bustCount, it.checkoutAttempts) },
+    StatCategory("Best Buddy")        { it.bestBuddyName ?: "-" },
+    StatCategory("Erzfeind")          { it.rivalName ?: "-" },
+    StatCategory("Easy Win")          { it.easyWinName ?: "-" }
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -335,6 +338,8 @@ private fun StatCard(name: String, value: String) {
                 style      = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 textAlign  = TextAlign.Center,
+                maxLines   = 2,
+                overflow   = TextOverflow.Ellipsis,
                 color      = MaterialTheme.colorScheme.onPrimaryContainer
             )
         }

@@ -24,7 +24,11 @@ data class PlayerStats(
     val totalDartsThrown: Int,
     val doubleHits: Int,
     val tripleHits: Int,
-    val outOfBounceCount: Int
+    val outOfBounceCount: Int,
+    // Social
+    val bestBuddyName: String?,
+    val rivalName: String?,
+    val easyWinName: String?
 )
 
 data class FieldHitFrequency(

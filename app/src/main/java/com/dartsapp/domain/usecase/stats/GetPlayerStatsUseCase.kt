@@ -1,6 +1,7 @@
 package com.dartsapp.domain.usecase.stats
 
 import com.dartsapp.data.db.dao.DartThrowDao
+import com.dartsapp.data.db.dao.GameParticipantDao
 import com.dartsapp.data.db.dao.PlayerDao
 import com.dartsapp.domain.model.PlayerStats
 import kotlinx.coroutines.flow.Flow
@@ -9,6 +10,7 @@ import javax.inject.Inject
 
 class GetPlayerStatsUseCase @Inject constructor(
     private val dartThrowDao: DartThrowDao,
+    private val gameParticipantDao: GameParticipantDao,
     private val playerDao: PlayerDao
 ) {
     operator fun invoke(playerId: Long): Flow<PlayerStats?> {
@@ -16,8 +18,9 @@ class GetPlayerStatsUseCase @Inject constructor(
             dartThrowDao.getGameStatsForPlayer(playerId),
             dartThrowDao.getDartStatsForPlayer(playerId),
             dartThrowDao.getAvgScorePerRound(playerId),
-            dartThrowDao.getRoundStatsForPlayer(playerId)
-        ) { game, darts, avgPerRound, rounds ->
+            dartThrowDao.getRoundStatsForPlayer(playerId),
+            gameParticipantDao.getSocialStatsForPlayer(playerId)
+        ) { game, darts, avgPerRound, rounds, social ->
             val player = playerDao.getPlayerById(playerId) ?: return@combine null
             PlayerStats(
                 playerId           = playerId,
@@ -38,7 +41,10 @@ class GetPlayerStatsUseCase @Inject constructor(
                 totalDartsThrown   = darts.totalDartsThrown,
                 doubleHits         = darts.doubleHits,
                 tripleHits         = darts.tripleHits,
-                outOfBounceCount   = darts.outOfBounceCount
+                outOfBounceCount   = darts.outOfBounceCount,
+                bestBuddyName      = social.bestBuddyName,
+                rivalName          = social.rivalName,
+                easyWinName        = social.easyWinName
             )
         }
     }
