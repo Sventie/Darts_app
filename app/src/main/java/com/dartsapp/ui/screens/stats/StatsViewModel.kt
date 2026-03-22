@@ -31,7 +31,14 @@ class StatsOverviewViewModel @Inject constructor(
             if (players.isEmpty()) flowOf(emptyList())
             else combine(players.map { p ->
                 getPlayerStatsUseCase(p.id).map { stats ->
-                    stats ?: PlayerStats(p.id, p.name, 0, 0, 0.0, 0.0, 0, 0)
+                    stats ?: PlayerStats(
+                        playerId = p.id, playerName = p.name,
+                        gamesPlayed = 0, wins = 0, secondPlace = 0, thirdPlace = 0,
+                        avgScorePerDart = 0.0, avgScorePerRound = 0.0, first9Average = 0.0,
+                        highestCheckout = 0, bustCount = 0, checkoutAttempts = 0,
+                        highestRound = 0, roundsUnder10 = 0, totalRounds = 0,
+                        totalDartsThrown = 0, doubleHits = 0, tripleHits = 0, outOfBounceCount = 0
+                    )
                 }
             }) { it.toList() }
         }
