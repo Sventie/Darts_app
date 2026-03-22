@@ -69,7 +69,9 @@ fun PlayerManagementScreen(
     var editPlayerName by remember { mutableStateOf("") }
 
     LaunchedEffect(event) {
-        when (event) {
+        val current = event
+        viewModel.clearEvent()
+        when (current) {
             is PlayerManagementEvent.PlayerCreated -> {
                 newPlayerName = ""
                 showAddDialog = false
@@ -83,7 +85,6 @@ fun PlayerManagementScreen(
             is PlayerManagementEvent.NameTaken  -> snackbarHostState.showSnackbar("Name bereits vergeben")
             null -> {}
         }
-        viewModel.clearEvent()
     }
 
     // ── Add-Player Dialog ──────────────────────────────────────────────────
