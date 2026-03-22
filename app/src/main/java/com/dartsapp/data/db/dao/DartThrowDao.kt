@@ -61,19 +61,38 @@ interface DartThrowDao {
 
     @Query("""
         SELECT
-            COUNT(DISTINCT CASE WHEN g.finished_at IS NOT NULL THEN gp.game_id END) as gamesPlayed,
-            COALESCE(SUM(CASE WHEN gp.placement = 1 THEN 1 ELSE 0 END), 0) as wins,
-            COALESCE(SUM(CASE WHEN gp.placement = 2 AND (
-                SELECT COUNT(*) FROM game_participants gp2 WHERE gp2.game_id = gp.game_id
-            ) > 2 THEN 1 ELSE 0 END), 0) as secondPlace,
-            COALESCE(SUM(CASE WHEN gp.placement = 3 AND (
-                SELECT COUNT(*) FROM game_participants gp3 WHERE gp3.game_id = gp.game_id
-            ) > 3 THEN 1 ELSE 0 END), 0) as thirdPlace,
+            (SELECT COUNT(DISTINCT gp2.game_id)
+             FROM game_participants gp2
+             JOIN games g2 ON g2.id = gp2.game_id
+             WHERE gp2.player_id = :playerId AND g2.finished_at IS NOT NULL
+            ) as gamesPlayed,
+            (SELECT COUNT(*)
+             FROM game_participants gp2
+             JOIN games g2 ON g2.id = gp2.game_id
+             WHERE gp2.player_id = :playerId
+               AND gp2.placement = 1
+               AND g2.finished_at IS NOT NULL
+            ) as wins,
+            (SELECT COUNT(*)
+             FROM game_participants gp2
+             JOIN games g2 ON g2.id = gp2.game_id
+             WHERE gp2.player_id = :playerId
+               AND gp2.placement = 2
+               AND g2.finished_at IS NOT NULL
+               AND (SELECT COUNT(*) FROM game_participants gp3 WHERE gp3.game_id = gp2.game_id) > 2
+            ) as secondPlace,
+            (SELECT COUNT(*)
+             FROM game_participants gp2
+             JOIN games g2 ON g2.id = gp2.game_id
+             WHERE gp2.player_id = :playerId
+               AND gp2.placement = 3
+               AND g2.finished_at IS NOT NULL
+               AND (SELECT COUNT(*) FROM game_participants gp3 WHERE gp3.game_id = gp2.game_id) > 3
+            ) as thirdPlace,
             COALESCE(MAX(CASE WHEN r.is_winning_round = 1 THEN r.score_before END), 0) as highestCheckout,
             COALESCE(SUM(CASE WHEN r.was_bust = 1 THEN 1 ELSE 0 END), 0) as bustCount,
             COALESCE(SUM(CASE WHEN r.was_bust = 1 OR r.is_winning_round = 1 THEN 1 ELSE 0 END), 0) as checkoutAttempts
         FROM game_participants gp
-        LEFT JOIN games g ON g.id = gp.game_id
         LEFT JOIN rounds r ON r.game_participant_id = gp.id
         WHERE gp.player_id = :playerId
     """)
