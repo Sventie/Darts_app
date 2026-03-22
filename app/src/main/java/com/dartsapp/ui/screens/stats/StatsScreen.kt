@@ -94,7 +94,6 @@ fun StatsScreen(
     val allStats by viewModel.allStats.collectAsState()
 
     var compareDialogOpen by remember { mutableStateOf(false) }
-    var heatmapDialogOpen by remember { mutableStateOf(false) }
     var filterIds by remember { mutableStateOf<Set<Long>?>(null) }
 
     val displayedStats = remember(allStats, filterIds) {
@@ -133,7 +132,7 @@ fun StatsScreen(
                 hasEnoughPlayers = allStats.size >= 2,
                 hasPlayers       = allStats.isNotEmpty(),
                 onCompareClick   = { compareDialogOpen = true },
-                onHeatmapClick   = { heatmapDialogOpen = true },
+                onHeatmapClick   = { allStats.firstOrNull()?.let { s -> onHeatmapClick(s.playerId) } },
                 onClearFilter    = { filterIds = null }
             )
 
@@ -169,16 +168,6 @@ fun StatsScreen(
             )
         }
 
-        if (heatmapDialogOpen) {
-            SelectPlayerForHeatmapDialog(
-                allPlayers = allStats,
-                onDismiss  = { heatmapDialogOpen = false },
-                onSelect   = { playerId ->
-                    heatmapDialogOpen = false
-                    onHeatmapClick(playerId)
-                }
-            )
-        }
     }
 }
 
