@@ -315,12 +315,10 @@ private fun GameSidePanel(
                 modifier = Modifier.weight(1f)
             )
 
-            state.checkoutSuggestion?.let { suggestion ->
-                CheckoutSuggestionCard(
-                    suggestion = suggestion,
-                    modifier = Modifier.weight(1f)
-                )
-            }
+            CheckoutSuggestionCard(
+                suggestion = state.checkoutSuggestion,
+                modifier   = Modifier.weight(1f)
+            )
         }
     }
 }
@@ -374,7 +372,7 @@ private fun DartsInfoCard(
 
 @Composable
 private fun CheckoutSuggestionCard(
-    suggestion: List<String>,
+    suggestion: List<String>?,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -394,7 +392,7 @@ private fun CheckoutSuggestionCard(
                     color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
                 )
                 Text(
-                    text = suggestion.joinToString("  –  "),
+                    text = if (suggestion != null) suggestion.joinToString("  –  ") else "–",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSecondaryContainer
@@ -437,14 +435,14 @@ private fun RoundSummaryRow(
             )
         }
 
-        state.checkoutSuggestion?.let { suggestion ->
-            Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.End) {
-                Text(
-                    text = "Checkout",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                suggestion.forEach { dart ->
+        Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.End) {
+            Text(
+                text = "Checkout",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            if (state.checkoutSuggestion != null) {
+                state.checkoutSuggestion.forEach { dart ->
                     Text(
                         text = dart,
                         style = MaterialTheme.typography.titleMedium,
@@ -452,6 +450,13 @@ private fun RoundSummaryRow(
                         textAlign = TextAlign.End
                     )
                 }
+            } else {
+                Text(
+                    text = "–",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.End
+                )
             }
         }
     }
