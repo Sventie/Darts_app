@@ -46,10 +46,9 @@ private val ColWire      = Color(0xFFAAAAAA)
 // ── Heat computation ───────────────────────────────────────────────────────────
 
 private const val GRID = 220
-// Sigma as fraction of canvas half-width.
-// ~8% of board radius ≈ slightly narrower than one segment width, giving
-// tight but clearly blended blobs centred on the actual tap position.
-private const val SIGMA = GRID * 0.08f
+// Sigma ≈ 3 % of canvas half-width → roughly 1/6 of a segment width.
+// Keeps blobs tight and position-accurate; nearby throws blend only when very close.
+private const val SIGMA = GRID * 0.03f
 
 /**
  * Builds a Gaussian-kernel heat bitmap from raw tap positions.
