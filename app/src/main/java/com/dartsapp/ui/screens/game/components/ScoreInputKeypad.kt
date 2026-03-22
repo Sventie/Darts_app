@@ -67,7 +67,7 @@ fun ScoreInputKeypad(
                     DartBoardInput(
                         onDartEntered = onDartEntered,
                         dartsEntered  = dartsEntered,
-                        modifier      = Modifier.size(boardSize).align(Alignment.Center)
+                        modifier      = Modifier.size(boardSize).align(Alignment.Center).padding(6.dp)
                     )
                 }
             }
