@@ -10,9 +10,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -103,27 +100,31 @@ fun ScoreInputKeypad(
 
                 Spacer(modifier = Modifier.height(GROUP_GAP))
 
-                // Number grid 1-20 – fixed height (4 rows) so special buttons sit directly below
-                val numbers = (1..20).toList()
-                LazyVerticalGrid(
-                    columns               = GridCells.Fixed(5),
-                    modifier              = Modifier.fillMaxWidth().height(BTN_H * 4 + 4.dp * 3),
-                    verticalArrangement   = Arrangement.spacedBy(4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                // Number grid 1-20: 4 rows × 5 cols, each button square via aspectRatio(1f)
+                Column(
+                    modifier            = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    items(numbers) { number ->
-                        OutlinedButton(
-                            onClick = {
-                                val eff = if (number == 25 && selectedMultiplier == ScoreMultiplier.TRIPLE)
-                                    ScoreMultiplier.SINGLE else selectedMultiplier
-                                onDartEntered(DartInput(number, eff, number * eff.value))
-                                selectedMultiplier = ScoreMultiplier.SINGLE
-                            },
-                            shape          = BTN_CORNER,
-                            modifier       = Modifier.fillMaxHeight(),
-                            contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
+                    (1..20).chunked(5).forEach { row ->
+                        Row(
+                            modifier              = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            Text("$number", style = MaterialTheme.typography.titleMedium)
+                            row.forEach { number ->
+                                OutlinedButton(
+                                    onClick = {
+                                        val eff = if (number == 25 && selectedMultiplier == ScoreMultiplier.TRIPLE)
+                                            ScoreMultiplier.SINGLE else selectedMultiplier
+                                        onDartEntered(DartInput(number, eff, number * eff.value))
+                                        selectedMultiplier = ScoreMultiplier.SINGLE
+                                    },
+                                    shape          = BTN_CORNER,
+                                    modifier       = Modifier.weight(1f).aspectRatio(1f),
+                                    contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
+                                ) {
+                                    Text("$number", style = MaterialTheme.typography.titleMedium)
+                                }
+                            }
                         }
                     }
                 }
