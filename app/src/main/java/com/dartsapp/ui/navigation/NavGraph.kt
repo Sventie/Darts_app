@@ -54,14 +54,14 @@ fun DartsNavGraph(navController: NavHostController) {
             route = Screen.Game.route,
             arguments = listOf(navArgument("gameId") { type = NavType.LongType })
         ) {
-            val goHome = {
-                navController.navigate(Screen.Home.route) {
-                    popUpTo(Screen.Home.route) { inclusive = true }
+            val goSetup = {
+                navController.navigate(Screen.GameSetup.route) {
+                    popUpTo(Screen.Home.route) { inclusive = false }
                 }
             }
             GameScreen(
-                onGameOver    = { goHome() },
-                onAbandonGame = { goHome() }
+                onGameOver    = { goSetup() },
+                onAbandonGame = { goSetup() }
             )
         }
 
