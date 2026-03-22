@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,14 +13,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -29,9 +29,8 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -47,6 +46,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.dartsapp.domain.model.PlayerStats
 import java.util.Locale
@@ -150,11 +150,11 @@ fun StatsScreen(
 
         if (compareDialogOpen) {
             ComparePlayersDialog(
-                allPlayers      = allStats,
+                allPlayers       = allStats,
                 initialSelection = filterIds ?: emptySet(),
-                onDismiss       = { compareDialogOpen = false },
-                onConfirm       = { ids ->
-                    filterIds = ids
+                onDismiss        = { compareDialogOpen = false },
+                onConfirm        = { ids ->
+                    filterIds = ids.ifEmpty { null }
                     compareDialogOpen = false
                 }
             )
@@ -181,7 +181,7 @@ private fun StatsActionBar(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        OutlinedButton(
+        Button(
             onClick = onCompareClick,
             enabled = hasEnoughPlayers
         ) {
@@ -206,9 +206,10 @@ private fun StatsActionBar(
 }
 
 // ---------------------------------------------------------------------------
-// Compare dialog
+// Compare dialog – modelled after PlayerSelectionDialog
 // ---------------------------------------------------------------------------
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ComparePlayersDialog(
     allPlayers: List<PlayerStats>,
@@ -216,167 +217,65 @@ private fun ComparePlayersDialog(
     onDismiss: () -> Unit,
     onConfirm: (Set<Long>) -> Unit
 ) {
-    var slots by remember {
-        val initial = initialSelection.toList().take(4)
-        mutableStateOf(buildList<Long?> {
-            addAll(initial)
-            repeat(4 - initial.size) { add(null) }
-        })
-    }
-    var pickingForSlot by remember { mutableStateOf<Int?>(null) }
+    var selectedIds by remember { mutableStateOf(initialSelection) }
 
-    val selectedIds = slots.filterNotNull().toSet()
-    val availablePlayers = allPlayers.filter { it.playerId !in selectedIds }
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            tonalElevation = 6.dp
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(24.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                Text("Spieler vergleichen", style = MaterialTheme.typography.titleLarge)
+                Spacer(Modifier.height(16.dp))
 
-    AlertDialog(
-        onDismissRequest = {
-            if (pickingForSlot != null) pickingForSlot = null else onDismiss()
-        },
-        title = {
-            Text(if (pickingForSlot != null) "Spieler auswählen" else "Spieler vergleichen")
-        },
-        text = {
-            if (pickingForSlot != null) {
-                // Player picker view
-                Column {
-                    if (availablePlayers.isEmpty()) {
-                        Text(
-                            "Keine weiteren Spieler verfügbar.",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    } else {
-                        availablePlayers.forEach { player ->
-                            TextButton(
-                                onClick = {
-                                    val idx = pickingForSlot!!
-                                    slots = slots.toMutableList().also { it[idx] = player.playerId }
-                                    pickingForSlot = null
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    allPlayers.forEach { player ->
+                        val isSelected = player.playerId in selectedIds
+                        Card(
+                            onClick = {
+                                selectedIds = if (isSelected) selectedIds - player.playerId
+                                              else selectedIds + player.playerId
+                            },
+                            modifier = Modifier.size(72.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                                                 else MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        ) {
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                 Text(
                                     text = player.playerName,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    textAlign = TextAlign.Start
+                                    style = MaterialTheme.typography.labelMedium,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(horizontal = 4.dp)
                                 )
                             }
                         }
                     }
                 }
-            } else {
-                // Slot grid view
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        "Wähle 2 bis 4 Spieler für den Vergleich.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    for (row in 0..1) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            for (col in 0..1) {
-                                val slotIdx = row * 2 + col
-                                val playerId = slots[slotIdx]
-                                val playerName = allPlayers.find { it.playerId == playerId }?.playerName
-                                PlayerSlotCard(
-                                    modifier = Modifier.weight(1f),
-                                    playerName = playerName,
-                                    canAdd = availablePlayers.isNotEmpty() || playerId != null,
-                                    onClick = {
-                                        if (playerId != null) {
-                                            slots = slots.toMutableList().also { it[slotIdx] = null }
-                                        } else if (availablePlayers.isNotEmpty()) {
-                                            pickingForSlot = slotIdx
-                                        }
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            if (pickingForSlot == null) {
-                Button(
-                    onClick = { onConfirm(selectedIds) },
-                    enabled = selectedIds.size >= 2
-                ) {
-                    Text("Vergleichen")
-                }
-            }
-        },
-        dismissButton = {
-            TextButton(
-                onClick = {
-                    if (pickingForSlot != null) pickingForSlot = null else onDismiss()
-                }
-            ) {
-                Text(if (pickingForSlot != null) "Zurück" else "Abbrechen")
-            }
-        }
-    )
-}
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun PlayerSlotCard(
-    modifier: Modifier,
-    playerName: String?,
-    canAdd: Boolean,
-    onClick: () -> Unit
-) {
-    OutlinedCard(
-        onClick = onClick,
-        modifier = modifier.height(80.dp),
-        enabled = canAdd
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(8.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            if (playerName != null) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
+                Spacer(Modifier.height(24.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Entfernen",
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = playerName,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        textAlign = TextAlign.Center,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            } else {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Spieler hinzufügen",
-                        tint = if (canAdd) MaterialTheme.colorScheme.primary
-                               else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
-                    )
-                    Text(
-                        text = "Hinzufügen",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = if (canAdd) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
-                    )
+                    TextButton(onClick = onDismiss) { Text("Abbrechen") }
+                    Button(
+                        onClick = { onConfirm(selectedIds) },
+                        enabled = selectedIds.size >= 2
+                    ) {
+                        Text("Vergleichen")
+                    }
                 }
             }
         }
