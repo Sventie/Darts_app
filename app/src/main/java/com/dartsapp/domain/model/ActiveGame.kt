@@ -5,7 +5,9 @@ import com.dartsapp.data.model.ScoreMultiplier
 data class DartInput(
     val field: Int,
     val multiplier: ScoreMultiplier,
-    val scoreValue: Int
+    val scoreValue: Int,
+    val tapX: Float? = null,   // normalised board coord: 0,0 = centre, 1.0 = canvas half-width
+    val tapY: Float? = null
 )
 
 data class ActivePlayer(

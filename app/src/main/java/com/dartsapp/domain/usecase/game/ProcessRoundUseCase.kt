@@ -60,7 +60,9 @@ class ProcessRoundUseCase @Inject constructor(
                     field = dart.field,
                     multiplier = dart.multiplier.name,
                     scoreValue = dart.scoreValue,
-                    isPadding = i >= actualDartCount
+                    isPadding = i >= actualDartCount,
+                    tapX = dart.tapX,
+                    tapY = dart.tapY
                 )
             }
         )

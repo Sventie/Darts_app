@@ -27,7 +27,7 @@ fun HeatmapScreen(
     viewModel: HeatmapViewModel = hiltViewModel()
 ) {
     val playerName  by viewModel.playerName.collectAsState()
-    val frequencies by viewModel.frequencies.collectAsState()
+    val hitPositions by viewModel.hitPositions.collectAsState()
 
     Scaffold(
         topBar = {
@@ -42,12 +42,12 @@ fun HeatmapScreen(
         }
     ) { padding ->
         Box(
-            modifier            = Modifier.fillMaxSize().padding(padding),
-            contentAlignment    = Alignment.Center
+            modifier         = Modifier.fillMaxSize().padding(padding),
+            contentAlignment = Alignment.Center
         ) {
             DartBoardHeatmap(
-                frequencies = frequencies,
-                modifier    = Modifier
+                hitPositions = hitPositions,
+                modifier     = Modifier
                     .fillMaxHeight()
                     .aspectRatio(1f)
             )

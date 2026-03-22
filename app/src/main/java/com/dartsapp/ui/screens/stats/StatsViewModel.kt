@@ -8,6 +8,7 @@ import com.dartsapp.domain.model.FieldHitFrequency
 import com.dartsapp.domain.model.PlayerStats
 import com.dartsapp.domain.usecase.player.GetPlayersUseCase
 import com.dartsapp.domain.usecase.stats.GetFieldFrequencyUseCase
+import com.dartsapp.domain.usecase.stats.GetHeatPositionsUseCase
 import com.dartsapp.domain.usecase.stats.GetPlayerStatsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -66,7 +67,7 @@ class StatsDetailViewModel @Inject constructor(
 class HeatmapViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     getPlayerStatsUseCase: GetPlayerStatsUseCase,
-    getFieldFrequencyUseCase: GetFieldFrequencyUseCase
+    getHeatPositionsUseCase: GetHeatPositionsUseCase
 ) : ViewModel() {
 
     private val playerId: Long = checkNotNull(savedStateHandle["playerId"])
@@ -75,6 +76,7 @@ class HeatmapViewModel @Inject constructor(
         .map { it?.playerName ?: "" }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
 
-    val frequencies: StateFlow<List<FieldHitFrequency>> = getFieldFrequencyUseCase(playerId)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val hitPositions: StateFlow<List<GetHeatPositionsUseCase.HitPosition>> =
+        getHeatPositionsUseCase(playerId)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 }

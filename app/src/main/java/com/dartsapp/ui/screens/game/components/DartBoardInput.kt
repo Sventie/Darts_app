@@ -99,10 +99,12 @@ fun DartBoardInput(
                     val dy = offset.y - cy
                     val rNorm = sqrt(dx * dx + dy * dy) / R
 
+                    val nx = dx / R   // normalised coords: 0,0=centre, ±1=canvas edge
+                    val ny = dy / R
                     val input: DartInput = when {
-                        rNorm < R_BULLSEYE -> DartInput(50, ScoreMultiplier.SINGLE, 50)
-                        rNorm < R_BULL     -> DartInput(25, ScoreMultiplier.SINGLE, 25)
-                        rNorm > R_DOUBLE_OUT        -> DartInput(0, ScoreMultiplier.SINGLE, 0)
+                        rNorm < R_BULLSEYE -> DartInput(50, ScoreMultiplier.SINGLE, 50, nx, ny)
+                        rNorm < R_BULL     -> DartInput(25, ScoreMultiplier.SINGLE, 25, nx, ny)
+                        rNorm > R_DOUBLE_OUT -> DartInput(0, ScoreMultiplier.SINGLE, 0) // miss – no board position
                         else -> {
                             val angleDeg   = Math.toDegrees(atan2(dy.toDouble(), dx.toDouble())).toFloat()
                             val boardAngle = (angleDeg + 90f + 360f) % 360f
@@ -113,7 +115,7 @@ fun DartBoardInput(
                                 rNorm >= R_DOUBLE_IN                          -> ScoreMultiplier.DOUBLE
                                 else                                          -> ScoreMultiplier.SINGLE
                             }
-                            DartInput(field, mult, field * mult.value)
+                            DartInput(field, mult, field * mult.value, nx, ny)
                         }
                     }
                     markers.add(offset)

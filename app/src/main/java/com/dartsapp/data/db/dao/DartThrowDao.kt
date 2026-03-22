@@ -12,6 +12,11 @@ data class FieldFrequencyRow(
     val count: Int
 )
 
+data class TapPositionRow(
+    @androidx.room.ColumnInfo(name = "tap_x") val tapX: Float,
+    @androidx.room.ColumnInfo(name = "tap_y") val tapY: Float
+)
+
 /** Game-level stats: placements, checkout info */
 data class GameStatsRaw(
     val gamesPlayed: Int,
@@ -47,6 +52,18 @@ interface DartThrowDao {
 
     @Insert
     suspend fun insertAll(dartThrows: List<DartThrowEntity>)
+
+    @Query("""
+        SELECT dt.tap_x, dt.tap_y
+        FROM dart_throws dt
+        JOIN rounds r ON r.id = dt.round_id
+        JOIN game_participants gp ON gp.id = r.game_participant_id
+        WHERE gp.player_id = :playerId
+          AND dt.is_padding = 0
+          AND dt.tap_x IS NOT NULL
+          AND dt.tap_y IS NOT NULL
+    """)
+    fun getTapPositionsForPlayer(playerId: Long): Flow<List<TapPositionRow>>
 
     @Query("""
         SELECT dt.field, dt.multiplier, COUNT(*) as count
