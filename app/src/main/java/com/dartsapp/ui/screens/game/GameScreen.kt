@@ -187,7 +187,6 @@ fun GameScreen(
                             modifier = Modifier
                                 .fillMaxHeight()
                                 .weight(0.58f)
-                                .padding(start = 8.dp, end = 4.dp)
                         )
 
                         VerticalDivider(modifier = Modifier.fillMaxHeight().padding(vertical = 8.dp))
