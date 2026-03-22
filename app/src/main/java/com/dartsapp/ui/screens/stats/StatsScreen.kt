@@ -56,6 +56,7 @@ private val STAT_CARD_CORNER = RoundedCornerShape(12.dp)
 
 private data class StatCategory(
     val title: String,
+    val description: String,
     val getValue: (PlayerStats) -> String
 )
 
@@ -63,24 +64,24 @@ private fun pct(hits: Int, total: Int): String =
     if (total > 0) String.format(Locale.getDefault(), "%.1f%%", hits * 100.0 / total) else "-"
 
 private val STAT_CATEGORIES = listOf(
-    StatCategory("Gespielte Spiele")  { "${it.gamesPlayed}" },
-    StatCategory("Siege")             { "${it.wins}" },
-    StatCategory("2. Platz")          { "${it.secondPlace}" },
-    StatCategory("3. Platz")          { "${it.thirdPlace}" },
-    StatCategory("Darts gesamt")      { "${it.totalDartsThrown}" },
-    StatCategory("Ø Punkte/Dart")     { String.format(Locale.getDefault(), "%.1f", it.avgScorePerDart) },
-    StatCategory("Ø Punkte/Runde")    { String.format(Locale.getDefault(), "%.1f", it.avgScorePerRound) },
-    StatCategory("First 9 Ø")        { String.format(Locale.getDefault(), "%.1f", it.first9Average) },
-    StatCategory("Höchstes Checkout") { "${it.highestCheckout}" },
-    StatCategory("Höchste Runde")     { "${it.highestRound}" },
-    StatCategory("Double-Quote")      { pct(it.doubleHits, it.totalDartsThrown) },
-    StatCategory("Triple-Quote")      { pct(it.tripleHits, it.totalDartsThrown) },
-    StatCategory("Out of Bounce")     { pct(it.outOfBounceCount, it.totalDartsThrown) },
-    StatCategory("Runden < 10")       { pct(it.roundsUnder10, it.totalRounds) },
-    StatCategory("Bust-Quote")        { pct(it.bustCount, it.checkoutAttempts) },
-    StatCategory("Best Buddy")        { it.bestBuddyName ?: "-" },
-    StatCategory("Erzfeind")          { it.rivalName ?: "-" },
-    StatCategory("Easy Win")          { it.easyWinName ?: "-" }
+    StatCategory("Gespielte Spiele",  "Anzahl abgeschlossener Spiele")                          { "${it.gamesPlayed}" },
+    StatCategory("Siege",             "1. Platz-Finishes")                                       { "${it.wins}" },
+    StatCategory("2. Platz",          "nur bei 3 oder mehr Spielern gewertet")                   { "${it.secondPlace}" },
+    StatCategory("3. Platz",          "nur bei 4 oder mehr Spielern gewertet")                   { "${it.thirdPlace}" },
+    StatCategory("Darts gesamt",      "alle geworfenen Darts über alle Spiele")                  { "${it.totalDartsThrown}" },
+    StatCategory("Ø Punkte/Dart",     "ohne Bust- und Checkout-Runden")                         { String.format(Locale.getDefault(), "%.1f", it.avgScorePerDart) },
+    StatCategory("Ø Punkte/Runde",    "ohne Bust- und Checkout-Runden")                         { String.format(Locale.getDefault(), "%.1f", it.avgScorePerRound) },
+    StatCategory("First 9 Ø",        "durchschnittlicher Gesamtwert der ersten 3 Runden")       { String.format(Locale.getDefault(), "%.1f", it.first9Average) },
+    StatCategory("Höchstes Checkout", "höchster Reststand beim Sieg")                           { "${it.highestCheckout}" },
+    StatCategory("Höchste Runde",     "bestes Ergebnis in einer einzelnen Runde")               { "${it.highestRound}" },
+    StatCategory("Double-Quote",      "Anteil der Darts auf Doubles")                           { pct(it.doubleHits, it.totalDartsThrown) },
+    StatCategory("Triple-Quote",      "Anteil der Darts auf Triples")                           { pct(it.tripleHits, it.totalDartsThrown) },
+    StatCategory("Out of Bounce",     "Anteil der Darts außerhalb der Scheibe")                 { pct(it.outOfBounceCount, it.totalDartsThrown) },
+    StatCategory("Runden < 10",       "Anteil der Runden mit weniger als 10 Punkten")           { pct(it.roundsUnder10, it.totalRounds) },
+    StatCategory("Bust-Quote",        "fehlgeschlagene Checkout-Versuche")                      { pct(it.bustCount, it.checkoutAttempts) },
+    StatCategory("Best Buddy",        "häufigster Mitspieler")                                  { it.bestBuddyName ?: "-" },
+    StatCategory("Erzfeind",          "Gegner, gegen den am häufigsten verloren wurde")         { it.rivalName ?: "-" },
+    StatCategory("Easy Win",          "Gegner, gegen den am häufigsten gewonnen wurde")         { it.easyWinName ?: "-" }
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -142,9 +143,10 @@ fun StatsScreen(
                 STAT_CATEGORIES.forEach { category ->
                     item(key = category.title) {
                         StatCategorySection(
-                            title    = category.title,
-                            players  = displayedStats,
-                            getValue = category.getValue
+                            title       = category.title,
+                            description = category.description,
+                            players     = displayedStats,
+                            getValue    = category.getValue
                         )
                     }
                 }
@@ -292,16 +294,27 @@ private fun ComparePlayersDialog(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun StatCategorySection(
-    title:    String,
-    players:  List<PlayerStats>,
-    getValue: (PlayerStats) -> String
+    title:       String,
+    description: String,
+    players:     List<PlayerStats>,
+    getValue:    (PlayerStats) -> String
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-            text       = title,
-            style      = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text       = title,
+                style      = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text  = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             players.forEach { stats ->
                 StatCard(name = stats.playerName, value = getValue(stats))
