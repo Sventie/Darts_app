@@ -6,8 +6,10 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -69,24 +71,41 @@ fun DartBoardIllustration(modifier: Modifier = Modifier) {
 @Composable
 fun DartBoardInput(
     onDartEntered: (DartInput) -> Unit,
-    dartsEntered: Int,
+    currentRoundDarts: List<DartInput>,
     modifier: Modifier = Modifier
 ) {
     val textMeasurer = rememberTextMeasurer()
-    val markers      = remember { mutableStateListOf<Offset>() }
-    val markersAlpha = remember { Animatable(1f) }
 
-    LaunchedEffect(dartsEntered) {
-        if (dartsEntered == 0 && markers.isNotEmpty()) {
-            markersAlpha.animateTo(0f, animationSpec = tween(durationMillis = 1000))
-            markers.clear()
-            markersAlpha.snapTo(1f)
-        } else if (dartsEntered > 0) {
-            markersAlpha.snapTo(1f)
+    // Normalised positions (tapX, tapY) of the last committed round, fading out
+    var ghostPositions by remember { mutableStateOf<List<Pair<Float, Float>>>(emptyList()) }
+    val ghostAlpha     = remember { Animatable(0f) }
+
+    // Track the previous dart list so we can detect a round-clear transition
+    val prevDartsRef = remember { mutableStateOf(currentRoundDarts) }
+
+    LaunchedEffect(currentRoundDarts) {
+        val prev = prevDartsRef.value
+        prevDartsRef.value = currentRoundDarts
+
+        if (currentRoundDarts.isEmpty() && prev.isNotEmpty()) {
+            // Round was committed: fade out the previous markers
+            ghostPositions = prev.mapNotNull { d ->
+                val tx = d.tapX; val ty = d.tapY
+                if (tx != null && ty != null) tx to ty else null
+            }
+            ghostAlpha.snapTo(1f)
+            ghostAlpha.animateTo(0f, animationSpec = tween(durationMillis = 1000))
+            ghostPositions = emptyList()
+        } else {
+            // Dart added, removed (undo) or player switched: cancel any lingering ghost
+            ghostAlpha.snapTo(0f)
+            ghostPositions = emptyList()
         }
     }
 
-    val markerAlpha = markersAlpha.value  // read in composition scope → triggers recompose
+    // Read in composition scope so recomposition (and therefore redraw) is triggered
+    // during the ghost fade animation.
+    val ghostA = ghostAlpha.value
 
     Canvas(
         modifier = modifier
@@ -102,9 +121,9 @@ fun DartBoardInput(
                     val nx = dx / R   // normalised coords: 0,0=centre, ±1=canvas edge
                     val ny = dy / R
                     val input: DartInput = when {
-                        rNorm < R_BULLSEYE -> DartInput(50, ScoreMultiplier.SINGLE, 50, nx, ny)
-                        rNorm < R_BULL     -> DartInput(25, ScoreMultiplier.SINGLE, 25, nx, ny)
-                        rNorm > R_DOUBLE_OUT -> DartInput(0, ScoreMultiplier.SINGLE, 0) // miss – no board position
+                        rNorm < R_BULLSEYE   -> DartInput(50, ScoreMultiplier.SINGLE, 50, nx, ny)
+                        rNorm < R_BULL       -> DartInput(25, ScoreMultiplier.SINGLE, 25, nx, ny)
+                        rNorm > R_DOUBLE_OUT -> DartInput(0,  ScoreMultiplier.SINGLE,  0, nx, ny)
                         else -> {
                             val angleDeg   = Math.toDegrees(atan2(dy.toDouble(), dx.toDouble())).toFloat()
                             val boardAngle = (angleDeg + 90f + 360f) % 360f
@@ -118,7 +137,6 @@ fun DartBoardInput(
                             DartInput(field, mult, field * mult.value, nx, ny)
                         }
                     }
-                    markers.add(offset)
                     onDartEntered(input)
                 }
             }
@@ -130,11 +148,25 @@ fun DartBoardInput(
 
         drawBoard(center, R, textMeasurer)
 
-        // Dart markers
         val markerRadius = R * 0.02f
-        markers.forEach { pos ->
-            drawCircle(color = Color.Red.copy(alpha = markerAlpha),   radius = markerRadius, center = pos)
-            drawCircle(color = Color.White.copy(alpha = markerAlpha), radius = markerRadius, center = pos, style = Stroke(2f))
+
+        // Live markers – derived from the ViewModel state; always correct after undo/player switch
+        currentRoundDarts.forEach { dart ->
+            val tx = dart.tapX; val ty = dart.tapY
+            if (tx != null && ty != null) {
+                val pos = Offset(tx * R + cx, ty * R + cy)
+                drawCircle(color = Color.Red,   radius = markerRadius, center = pos)
+                drawCircle(color = Color.White, radius = markerRadius, center = pos, style = Stroke(2f))
+            }
+        }
+
+        // Ghost markers – previous round fading out
+        if (ghostA > 0f) {
+            ghostPositions.forEach { (nx, ny) ->
+                val pos = Offset(nx * R + cx, ny * R + cy)
+                drawCircle(color = Color.Red.copy(alpha = ghostA),   radius = markerRadius, center = pos)
+                drawCircle(color = Color.White.copy(alpha = ghostA), radius = markerRadius, center = pos, style = Stroke(2f))
+            }
         }
     }
 }

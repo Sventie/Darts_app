@@ -43,10 +43,10 @@ private val GROUP_GAP: Dp = 20.dp
 
 @Composable
 fun ScoreInputKeypad(
-    dartsEntered: Int,
+    currentRoundDarts: List<DartInput>,
     onDartEntered: (DartInput) -> Unit,
     onUndo: () -> Unit,
-    canUndo: Boolean = dartsEntered > 0,
+    canUndo: Boolean = currentRoundDarts.isNotEmpty(),
     modifier: Modifier = Modifier
 ) {
     var inputMode by remember { mutableStateOf(InputMode.BOARD) }
@@ -65,9 +65,9 @@ fun ScoreInputKeypad(
                 BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
                     val boardSize = minOf(maxWidth, maxHeight)
                     DartBoardInput(
-                        onDartEntered = onDartEntered,
-                        dartsEntered  = dartsEntered,
-                        modifier      = Modifier.size(boardSize).align(Alignment.Center).padding(6.dp)
+                        onDartEntered     = onDartEntered,
+                        currentRoundDarts = currentRoundDarts,
+                        modifier          = Modifier.size(boardSize).align(Alignment.Center).padding(6.dp)
                     )
                 }
             }

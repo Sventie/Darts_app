@@ -180,7 +180,7 @@ fun GameScreen(
                     ) {
                         // Left: score input (dartboard or keypad)
                         ScoreInputKeypad(
-                            dartsEntered = state.currentRoundDarts.size,
+                            currentRoundDarts = state.currentRoundDarts,
                             onDartEntered = viewModel::onDartEntered,
                             onUndo = viewModel::onUndoLastDart,
                             canUndo = state.currentRoundDarts.isNotEmpty() || state.lastCommittedRound != null,
@@ -238,7 +238,7 @@ fun GameScreen(
                         Spacer(modifier = Modifier.height(8.dp))
 
                         ScoreInputKeypad(
-                            dartsEntered = state.currentRoundDarts.size,
+                            currentRoundDarts = state.currentRoundDarts,
                             onDartEntered = viewModel::onDartEntered,
                             onUndo = viewModel::onUndoLastDart,
                             canUndo = state.currentRoundDarts.isNotEmpty() || state.lastCommittedRound != null,
