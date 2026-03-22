@@ -86,13 +86,6 @@ fun PlayerScoreCard(
     }
 }
 
-private fun placementLabel(placement: Int) = when (placement) {
-    1 -> "Gewinner"
-    2 -> "2. Platz"
-    3 -> "3. Platz"
-    else -> "$placement. Platz"
-}
-
 private fun placementBadge(placement: Int) = when (placement) {
     1 -> "🥇"
     2 -> "🥈"

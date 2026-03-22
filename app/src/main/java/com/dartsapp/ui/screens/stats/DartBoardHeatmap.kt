@@ -25,7 +25,6 @@ import kotlin.math.cos
 import kotlin.math.exp
 import kotlin.math.roundToInt
 import kotlin.math.sin
-import kotlin.math.sqrt
 
 // ── Board geometry ─────────────────────────────────────────────────────────────
 
@@ -36,6 +35,7 @@ private const val R_TRIPLE_IN      = 0.375f
 private const val R_TRIPLE_OUT     = 0.483f
 private const val R_DOUBLE_IN      = 0.760f
 private const val R_DOUBLE_OUT     = 0.894f
+private const val R_DOUBLE_OUT_SQ  = R_DOUBLE_OUT * R_DOUBLE_OUT
 private const val R_LABEL_RING_OUT = 1.000f
 private const val R_LABEL          = 0.945f
 
@@ -87,7 +87,7 @@ private fun computeHeatBitmap(positions: List<HitPosition>): AndroidBitmap? {
         for (x in 0 until GRID) {
             val nx = (x - half) / half
             // Clip to scoring area; label ring stays black
-            if (sqrt(nx * nx + ny * ny) > R_DOUBLE_OUT) {
+            if (nx * nx + ny * ny > R_DOUBLE_OUT_SQ) {
                 pixels[y * GRID + x] = 0
                 continue
             }
