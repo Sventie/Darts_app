@@ -43,13 +43,25 @@ private data class StatCategory(
     val getValue: (PlayerStats) -> String
 )
 
+private fun pct(hits: Int, total: Int): String =
+    if (total > 0) String.format(Locale.getDefault(), "%.1f%%", hits * 100.0 / total) else "-"
+
 private val STAT_CATEGORIES = listOf(
-    StatCategory("Gespielte Spiele") { "${it.gamesPlayed}" },
-    StatCategory("Siege")            { "${it.wins}" },
-    StatCategory("Ø Punkte/Dart")    { String.format(Locale.getDefault(), "%.1f", it.avgScorePerDart) },
-    StatCategory("Ø Punkte/Runde")   { String.format(Locale.getDefault(), "%.1f", it.avgScorePerRound) },
-    StatCategory("Höchste Runde")    { "${it.highestRound}" },
-    StatCategory("Darts gesamt")     { "${it.totalDartsThrown}" }
+    StatCategory("Gespielte Spiele")  { "${it.gamesPlayed}" },
+    StatCategory("Siege")             { "${it.wins}" },
+    StatCategory("2. Platz")          { "${it.secondPlace}" },
+    StatCategory("3. Platz")          { "${it.thirdPlace}" },
+    StatCategory("Darts gesamt")      { "${it.totalDartsThrown}" },
+    StatCategory("Ø Punkte/Dart")     { String.format(Locale.getDefault(), "%.1f", it.avgScorePerDart) },
+    StatCategory("Ø Punkte/Runde")    { String.format(Locale.getDefault(), "%.1f", it.avgScorePerRound) },
+    StatCategory("First 9 Ø")        { String.format(Locale.getDefault(), "%.1f", it.first9Average) },
+    StatCategory("Höchstes Checkout") { "${it.highestCheckout}" },
+    StatCategory("Höchste Runde")     { "${it.highestRound}" },
+    StatCategory("Double-Quote")      { pct(it.doubleHits, it.totalDartsThrown) },
+    StatCategory("Triple-Quote")      { pct(it.tripleHits, it.totalDartsThrown) },
+    StatCategory("Out of Bounce")     { pct(it.outOfBounceCount, it.totalDartsThrown) },
+    StatCategory("Runden < 10")       { pct(it.roundsUnder10, it.totalRounds) },
+    StatCategory("Bust-Quote")        { pct(it.bustCount, it.checkoutAttempts) }
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
