@@ -50,7 +50,7 @@ fun ScoreInputKeypad(
     canUndo: Boolean = dartsEntered > 0,
     modifier: Modifier = Modifier
 ) {
-    var inputMode by remember { mutableStateOf(InputMode.KEYPAD) }
+    var inputMode by remember { mutableStateOf(InputMode.BOARD) }
     var selectedMultiplier by remember { mutableStateOf(ScoreMultiplier.SINGLE) }
 
     // fillMaxHeight so the inner weight(1f) on the grid can resolve against a bounded height.
@@ -64,15 +64,15 @@ fun ScoreInputKeypad(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             ToggleButton(
-                selected = inputMode == InputMode.KEYPAD,
-                onClick  = { inputMode = InputMode.KEYPAD },
-                label    = "Tastatur",
-                modifier = Modifier.weight(1f).height(BTN_H)
-            )
-            ToggleButton(
                 selected = inputMode == InputMode.BOARD,
                 onClick  = { inputMode = InputMode.BOARD },
                 label    = "Scheibe",
+                modifier = Modifier.weight(1f).height(BTN_H)
+            )
+            ToggleButton(
+                selected = inputMode == InputMode.KEYPAD,
+                onClick  = { inputMode = InputMode.KEYPAD },
+                label    = "Tastatur",
                 modifier = Modifier.weight(1f).height(BTN_H)
             )
         }
