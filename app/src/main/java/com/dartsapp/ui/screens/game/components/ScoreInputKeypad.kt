@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -36,13 +35,10 @@ private enum class InputMode { KEYPAD, BOARD }
 /** Corner radius matching the player score cards. */
 private val BTN_CORNER = RoundedCornerShape(8.dp)
 
-/** Height for mode/multiplier/special buttons. */
+/** Uniform height for ALL interactive buttons (toggle, keypad, specials, undo). */
 private val BTN_H: Dp = 48.dp
 
-/** Smaller height for the mode-toggle row to give the dartboard maximum space. */
-private val TOGGLE_BTN_H: Dp = 36.dp
-
-/** Larger gap between logical button groups (mode→multiplier, multiplier→grid). */
+/** Gap between logical button groups in keypad mode. */
 private val GROUP_GAP: Dp = 20.dp
 
 @Composable
@@ -56,69 +52,43 @@ fun ScoreInputKeypad(
     var inputMode by remember { mutableStateOf(InputMode.BOARD) }
     var selectedMultiplier by remember { mutableStateOf(ScoreMultiplier.SINGLE) }
 
-    Column(modifier = modifier.fillMaxHeight()) {
+    // Total vertical space the toggle overlay row occupies: BTN_H + 4dp top + 4dp bottom
+    val overlayRowH: Dp = BTN_H + 8.dp
 
-        // ── Input mode toggle (always padded) ─────────────────────────────
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 4.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            ToggleButton(
-                selected = inputMode == InputMode.BOARD,
-                onClick  = { inputMode = InputMode.BOARD },
-                label    = "Scheibe",
-                modifier = Modifier.weight(1f).height(TOGGLE_BTN_H)
-            )
-            ToggleButton(
-                selected = inputMode == InputMode.KEYPAD,
-                onClick  = { inputMode = InputMode.KEYPAD },
-                label    = "Tastatur",
-                modifier = Modifier.weight(1f).height(TOGGLE_BTN_H)
-            )
-        }
+    Box(modifier = modifier) {
 
+        // ── Mode content ──────────────────────────────────────────────────
         when (inputMode) {
 
-            // ── Board mode: fills all remaining space edge-to-edge ────────
+            // Board: dartboard fills the FULL box – the toggle gap is part of the board
             InputMode.BOARD -> {
-                BoxWithConstraints(
-                    modifier         = Modifier.fillMaxWidth().weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
+                BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
                     val boardSize = minOf(maxWidth, maxHeight)
                     DartBoardInput(
                         onDartEntered = onDartEntered,
                         dartsEntered  = dartsEntered,
-                        modifier      = Modifier.size(boardSize)
+                        modifier      = Modifier.size(boardSize).align(Alignment.Center)
                     )
-                    Button(
-                        onClick  = onUndo,
-                        enabled  = canUndo,
-                        shape    = BTN_CORNER,
-                        colors   = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .height(BTN_H)
-                            .padding(bottom = 4.dp, end = 8.dp)
-                    ) { Text("Rückgängig") }
                 }
             }
 
-            // ── Keypad mode ───────────────────────────────────────────────
+            // Keypad: content lives below the toggle row and above the Rückgängig button
             InputMode.KEYPAD -> {
                 Column(
                     modifier = Modifier
                         .fillMaxHeight()
-                        .padding(horizontal = 8.dp)
-                        .padding(bottom = 8.dp)
+                        .padding(
+                            start  = 8.dp,
+                            end    = 8.dp,
+                            top    = overlayRowH,
+                            bottom = overlayRowH
+                        )
                 ) {
                     Spacer(modifier = Modifier.height(GROUP_GAP))
 
                     // Multiplier row
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier              = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         ScoreMultiplier.entries.forEach { mult ->
@@ -133,7 +103,7 @@ fun ScoreInputKeypad(
 
                     Spacer(modifier = Modifier.height(GROUP_GAP))
 
-                    // Number grid 1-20: 4 rows × 5 cols, scales to fill all remaining height
+                    // Number grid 1-20: 4 rows × 5 cols, scales to fill remaining height
                     Column(
                         modifier            = Modifier.fillMaxWidth().weight(1f),
                         verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -200,25 +170,41 @@ fun ScoreInputKeypad(
                             modifier = Modifier.weight(1f).height(BTN_H)
                         ) { Text("Bullseye") }
                     }
-
-                    Spacer(modifier = Modifier.height(GROUP_GAP))
-
-                    // Rückgängig at the very bottom-end
-                    Row(
-                        modifier              = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End
-                    ) {
-                        Button(
-                            onClick  = onUndo,
-                            enabled  = canUndo,
-                            shape    = BTN_CORNER,
-                            colors   = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                            modifier = Modifier.height(BTN_H)
-                        ) { Text("Rückgängig") }
-                    }
                 }
             }
         }
+
+        // ── Toggle buttons overlaid at top-left (Scheibe) and top-right (Tastatur) ──
+        // Gap between them is empty in keypad mode; filled by the board in board mode.
+        Row(
+            modifier              = Modifier.fillMaxWidth().padding(4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            ToggleButton(
+                selected = inputMode == InputMode.BOARD,
+                onClick  = { inputMode = InputMode.BOARD },
+                label    = "Scheibe",
+                modifier = Modifier.height(BTN_H)
+            )
+            ToggleButton(
+                selected = inputMode == InputMode.KEYPAD,
+                onClick  = { inputMode = InputMode.KEYPAD },
+                label    = "Tastatur",
+                modifier = Modifier.height(BTN_H)
+            )
+        }
+
+        // ── Rückgängig: always bottom-right, same size in both modes ──────
+        Button(
+            onClick  = onUndo,
+            enabled  = canUndo,
+            shape    = BTN_CORNER,
+            colors   = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(4.dp)   // margin outside the button – does NOT shrink the button
+                .height(BTN_H)
+        ) { Text("Rückgängig") }
     }
 }
 
