@@ -18,5 +18,7 @@ class PlayerRepository @Inject constructor(
 
     suspend fun deletePlayer(player: PlayerEntity) = playerDao.delete(player)
 
+    suspend fun updatePlayer(player: PlayerEntity) = playerDao.update(player)
+
     suspend fun getPlayerByName(name: String): PlayerEntity? = playerDao.getPlayerByName(name)
 }

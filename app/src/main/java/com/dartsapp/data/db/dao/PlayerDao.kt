@@ -5,6 +5,7 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import com.dartsapp.data.db.entity.PlayerEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -15,6 +16,9 @@ interface PlayerDao {
 
     @Delete
     suspend fun delete(player: PlayerEntity)
+
+    @Update
+    suspend fun update(player: PlayerEntity)
 
     @Query("SELECT * FROM players ORDER BY name ASC")
     fun getAllPlayers(): Flow<List<PlayerEntity>>

@@ -16,15 +16,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
@@ -34,7 +31,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -68,7 +64,8 @@ fun PlayerManagementScreen(
 
     var showAddDialog by remember { mutableStateOf(false) }
     var newPlayerName by remember { mutableStateOf("") }
-    var playerToDelete by remember { mutableStateOf<PlayerEntity?>(null) }
+    var playerToEdit by remember { mutableStateOf<PlayerEntity?>(null) }
+    var editPlayerName by remember { mutableStateOf("") }
 
     LaunchedEffect(event) {
         when (event) {
@@ -76,6 +73,10 @@ fun PlayerManagementScreen(
                 newPlayerName = ""
                 showAddDialog = false
                 snackbarHostState.showSnackbar("Spieler erstellt")
+            }
+            is PlayerManagementEvent.PlayerRenamed -> {
+                playerToEdit = null
+                snackbarHostState.showSnackbar("Name gespeichert")
             }
             is PlayerManagementEvent.NameEmpty  -> snackbarHostState.showSnackbar("Name darf nicht leer sein")
             is PlayerManagementEvent.NameTaken  -> snackbarHostState.showSnackbar("Name bereits vergeben")
@@ -119,26 +120,34 @@ fun PlayerManagementScreen(
         }
     }
 
-    // ── Delete-Player Dialog ───────────────────────────────────────────────
-    playerToDelete?.let { player ->
-        Dialog(onDismissRequest = { playerToDelete = null }) {
+    // ── Edit-Player Dialog ─────────────────────────────────────────────────
+    playerToEdit?.let { player ->
+        Dialog(onDismissRequest = { playerToEdit = null }) {
             Surface(
                 shape          = MaterialTheme.shapes.large,
                 tonalElevation = 6.dp
             ) {
                 Column(modifier = Modifier.padding(24.dp)) {
                     Text(
-                        text  = "Spieler löschen",
+                        text  = "Spieler bearbeiten",
                         style = MaterialTheme.typography.headlineSmall
                     )
-                    Spacer(Modifier.height(12.dp))
-                    Text(
-                        text  = "\"${player.name}\" löschen? Dies kann nicht rückgängig gemacht werden.",
-                        style = MaterialTheme.typography.bodyMedium
+                    Spacer(Modifier.height(16.dp))
+                    OutlinedTextField(
+                        value         = editPlayerName,
+                        onValueChange = { editPlayerName = it },
+                        label         = { Text("Spielername") },
+                        singleLine    = true,
+                        modifier      = Modifier.fillMaxWidth()
                     )
                     Spacer(Modifier.height(24.dp))
                     Button(
-                        onClick = { viewModel.deletePlayer(player); playerToDelete = null },
+                        onClick  = { viewModel.renamePlayer(player, editPlayerName) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Speichern") }
+                    Spacer(Modifier.height(8.dp))
+                    Button(
+                        onClick = { viewModel.deletePlayer(player); playerToEdit = null },
                         modifier = Modifier.fillMaxWidth(),
                         colors   = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.error
@@ -146,7 +155,7 @@ fun PlayerManagementScreen(
                     ) { Text("Löschen") }
                     Spacer(Modifier.height(8.dp))
                     OutlinedButton(
-                        onClick  = { playerToDelete = null },
+                        onClick  = { playerToEdit = null },
                         modifier = Modifier.fillMaxWidth()
                     ) { Text("Abbrechen") }
                 }
@@ -175,8 +184,8 @@ fun PlayerManagementScreen(
         ) {
             items(players, key = { it.id }) { player ->
                 PlayerManagementCard(
-                    player    = player,
-                    onDelete  = { playerToDelete = player }
+                    player  = player,
+                    onClick = { playerToEdit = player; editPlayerName = player.name }
                 )
             }
             item {
@@ -188,10 +197,11 @@ fun PlayerManagementScreen(
 
 @Composable
 private fun PlayerManagementCard(
-    player:   PlayerEntity,
-    onDelete: () -> Unit
+    player:  PlayerEntity,
+    onClick: () -> Unit
 ) {
     Card(
+        onClick  = onClick,
         modifier = Modifier.size(CARD_SIZE),
         shape    = CARD_CORNER,
         colors   = CardDefaults.cardColors(
@@ -200,25 +210,14 @@ private fun PlayerManagementCard(
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             Text(
-                text      = player.name,
-                style     = MaterialTheme.typography.titleMedium,
+                text       = player.name,
+                style      = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 maxLines   = 2,
                 overflow   = TextOverflow.Ellipsis,
                 textAlign  = TextAlign.Center,
                 modifier   = Modifier.align(Alignment.Center).padding(horizontal = 8.dp)
             )
-            IconButton(
-                onClick  = onDelete,
-                modifier = Modifier.align(Alignment.TopEnd).size(36.dp)
-            ) {
-                Icon(
-                    imageVector        = Icons.Default.Delete,
-                    contentDescription = "Löschen: ${player.name}",
-                    tint               = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
-                    modifier           = Modifier.size(18.dp)
-                )
-            }
         }
     }
 }

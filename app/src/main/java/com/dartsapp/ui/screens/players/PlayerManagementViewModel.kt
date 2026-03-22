@@ -3,6 +3,7 @@ package com.dartsapp.ui.screens.players
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dartsapp.data.db.entity.PlayerEntity
+import com.dartsapp.data.repository.PlayerRepository
 import com.dartsapp.domain.usecase.player.CreatePlayerResult
 import com.dartsapp.domain.usecase.player.CreatePlayerUseCase
 import com.dartsapp.domain.usecase.player.DeletePlayerUseCase
@@ -18,6 +19,7 @@ import javax.inject.Inject
 
 sealed class PlayerManagementEvent {
     object PlayerCreated : PlayerManagementEvent()
+    object PlayerRenamed : PlayerManagementEvent()
     object NameEmpty : PlayerManagementEvent()
     object NameTaken : PlayerManagementEvent()
 }
@@ -26,7 +28,8 @@ sealed class PlayerManagementEvent {
 class PlayerManagementViewModel @Inject constructor(
     getPlayersUseCase: GetPlayersUseCase,
     private val createPlayerUseCase: CreatePlayerUseCase,
-    private val deletePlayerUseCase: DeletePlayerUseCase
+    private val deletePlayerUseCase: DeletePlayerUseCase,
+    private val playerRepository: PlayerRepository
 ) : ViewModel() {
 
     val players: StateFlow<List<PlayerEntity>> = getPlayersUseCase()
@@ -43,6 +46,23 @@ class PlayerManagementViewModel @Inject constructor(
                 is CreatePlayerResult.NameEmpty -> PlayerManagementEvent.NameEmpty
                 is CreatePlayerResult.NameTaken -> PlayerManagementEvent.NameTaken
             }
+        }
+    }
+
+    fun renamePlayer(player: PlayerEntity, newName: String) {
+        val trimmed = newName.trim()
+        if (trimmed.isBlank()) {
+            _event.value = PlayerManagementEvent.NameEmpty
+            return
+        }
+        viewModelScope.launch {
+            val existing = playerRepository.getPlayerByName(trimmed)
+            if (existing != null && existing.id != player.id) {
+                _event.value = PlayerManagementEvent.NameTaken
+                return@launch
+            }
+            playerRepository.updatePlayer(player.copy(name = trimmed))
+            _event.value = PlayerManagementEvent.PlayerRenamed
         }
     }
 
