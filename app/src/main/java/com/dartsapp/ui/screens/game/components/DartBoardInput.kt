@@ -33,15 +33,16 @@ import kotlin.math.sqrt
 private val BOARD_NUMBERS = listOf(20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5)
 
 // All radii as fractions of the canvas half-width.
-// Proportions match the reference image: wider triple & double rings for easier touch.
-private const val R_BULLSEYE   = 0.048f  // inner bull  (50 pts)
-private const val R_BULL       = 0.120f  // outer bull  (25 pts)
-private const val R_TRIPLE_IN  = 0.336f  // triple ring inner edge
-private const val R_TRIPLE_OUT = 0.432f  // triple ring outer edge  (96dp wide = 2.3× original)
-private const val R_DOUBLE_IN      = 0.680f  // double ring inner edge
-private const val R_DOUBLE_OUT     = 0.800f  // double ring outer edge  (120dp wide = 2.9× original)
-private const val R_LABEL_RING_OUT = 0.895f  // outer edge of the dark number ring
-private const val R_LABEL          = 0.846f  // center of label ring: (0.800 + 0.892) / 2
+// Scaled so R_LABEL_RING_OUT = 1.0: the board fills the full composable bounds with no
+// empty border. Scale factor = 1 / 0.895 ≈ 1.117 applied to original values.
+private const val R_BULLSEYE       = 0.054f  // inner bull  (50 pts)
+private const val R_BULL           = 0.134f  // outer bull  (25 pts)
+private const val R_TRIPLE_IN      = 0.375f  // triple ring inner edge
+private const val R_TRIPLE_OUT     = 0.483f  // triple ring outer edge
+private const val R_DOUBLE_IN      = 0.760f  // double ring inner edge
+private const val R_DOUBLE_OUT     = 0.894f  // double ring outer edge
+private const val R_LABEL_RING_OUT = 1.000f  // outer edge of the dark number ring (fills composable)
+private const val R_LABEL          = 0.945f  // center of label ring
 
 private val ColBoardBg   = Color(0xFF111111)
 private val ColLabelRing = Color(0xFF0D0D0D)

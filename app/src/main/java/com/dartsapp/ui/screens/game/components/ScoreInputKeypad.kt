@@ -39,6 +39,9 @@ private val BTN_CORNER = RoundedCornerShape(8.dp)
 /** Height for mode/multiplier/special buttons. */
 private val BTN_H: Dp = 48.dp
 
+/** Smaller height for the mode-toggle row to give the dartboard maximum space. */
+private val TOGGLE_BTN_H: Dp = 36.dp
+
 /** Larger gap between logical button groups (mode→multiplier, multiplier→grid). */
 private val GROUP_GAP: Dp = 20.dp
 
@@ -59,20 +62,20 @@ fun ScoreInputKeypad(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
+                .padding(start = 4.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             ToggleButton(
                 selected = inputMode == InputMode.BOARD,
                 onClick  = { inputMode = InputMode.BOARD },
                 label    = "Scheibe",
-                modifier = Modifier.weight(1f).height(BTN_H)
+                modifier = Modifier.weight(1f).height(TOGGLE_BTN_H)
             )
             ToggleButton(
                 selected = inputMode == InputMode.KEYPAD,
                 onClick  = { inputMode = InputMode.KEYPAD },
                 label    = "Tastatur",
-                modifier = Modifier.weight(1f).height(BTN_H)
+                modifier = Modifier.weight(1f).height(TOGGLE_BTN_H)
             )
         }
 
