@@ -26,8 +26,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.RangeSlider
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -49,7 +49,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.dartsapp.data.db.entity.PlayerEntity
 import kotlin.math.roundToInt
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HeatmapScreen(
     onBack: () -> Unit,
@@ -134,12 +134,36 @@ fun HeatmapScreen(
                             text  = "Spiel $fromGame – $effectiveTo von $gameCount",
                             style = MaterialTheme.typography.bodyMedium
                         )
-                        RangeSlider(
-                            value         = fromGame.toFloat()..effectiveTo.toFloat(),
-                            onValueChange = { range ->
-                                val newFrom = range.start.roundToInt().coerceIn(1, gameCount)
-                                val newTo   = range.endInclusive.roundToInt().coerceIn(newFrom, gameCount)
-                                viewModel.setGameRange(newFrom, newTo)
+
+                        // Two separate sliders avoid the "stuck when overlapping" problem
+                        // of RangeSlider. The from-slider is capped at effectiveTo,
+                        // the to-slider is capped at fromGame from below.
+                        Text(
+                            "Von",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Slider(
+                            value         = fromGame.toFloat(),
+                            onValueChange = { v ->
+                                val newFrom = v.roundToInt().coerceIn(1, effectiveTo)
+                                viewModel.setGameRange(newFrom, toGame)
+                            },
+                            valueRange    = 1f..gameCount.toFloat(),
+                            steps         = (gameCount - 2).coerceAtLeast(0),
+                            modifier      = Modifier.fillMaxWidth()
+                        )
+
+                        Text(
+                            "Bis",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Slider(
+                            value         = effectiveTo.toFloat(),
+                            onValueChange = { v ->
+                                val newTo = v.roundToInt().coerceIn(fromGame, gameCount)
+                                viewModel.setGameRange(fromGame, newTo)
                             },
                             valueRange    = 1f..gameCount.toFloat(),
                             steps         = (gameCount - 2).coerceAtLeast(0),
@@ -180,6 +204,7 @@ fun HeatmapScreen(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SelectPlayerDialog(
     allPlayers: List<PlayerEntity>,
