@@ -101,7 +101,18 @@ interface DartThrowDao {
     @Query("""
         SELECT
             COALESCE(AVG(CASE WHEN r.is_winning_round = 0 AND r.was_bust = 0 THEN dt.score_value END), 0.0) as avgScorePerDart,
-            COALESCE(AVG(CASE WHEN r.round_number <= 3 THEN dt.score_value END), 0.0) as first9Average,
+            COALESCE((
+                SELECT AVG(game_first9) FROM (
+                    SELECT SUM(dt2.score_value) as game_first9
+                    FROM rounds r2
+                    JOIN dart_throws dt2 ON dt2.round_id = r2.id
+                    JOIN game_participants gp2 ON gp2.id = r2.game_participant_id
+                    WHERE gp2.player_id = :playerId
+                      AND r2.round_number <= 3
+                      AND dt2.is_padding = 0
+                    GROUP BY gp2.game_id
+                )
+            ), 0.0) as first9Average,
             COUNT(dt.id) as totalDartsThrown,
             COUNT(CASE WHEN dt.multiplier = 'DOUBLE' THEN 1 END) as doubleHits,
             COUNT(CASE WHEN dt.multiplier = 'TRIPLE' THEN 1 END) as tripleHits,
