@@ -91,8 +91,10 @@ class HeatmapViewModel @Inject constructor(
         .map { positions ->
             if (positions.isEmpty()) 0f
             else {
-                val meanSq = positions.map { it.nx * it.nx + it.ny * it.ny }.average().toFloat()
-                (sqrt(meanSq) / R_DOUBLE_OUT).coerceIn(0f, 1f)
+                val meanX = positions.map { it.nx }.average().toFloat()
+                val meanY = positions.map { it.ny }.average().toFloat()
+                val variance = positions.map { (it.nx - meanX).let { d -> d * d } + (it.ny - meanY).let { d -> d * d } }.average().toFloat()
+                (sqrt(variance) / R_DOUBLE_OUT).coerceIn(0f, 1f)
             }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0f)
