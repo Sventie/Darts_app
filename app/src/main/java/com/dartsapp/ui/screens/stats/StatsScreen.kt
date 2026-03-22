@@ -87,12 +87,14 @@ private val STAT_CATEGORIES = listOf(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StatsScreen(
-    onBack: () -> Unit,
+    onBack:         () -> Unit,
+    onHeatmapClick: (Long) -> Unit,
     viewModel: StatsOverviewViewModel = hiltViewModel()
 ) {
     val allStats by viewModel.allStats.collectAsState()
 
     var compareDialogOpen by remember { mutableStateOf(false) }
+    var heatmapDialogOpen by remember { mutableStateOf(false) }
     var filterIds by remember { mutableStateOf<Set<Long>?>(null) }
 
     val displayedStats = remember(allStats, filterIds) {
@@ -127,10 +129,12 @@ fun StatsScreen(
                 .padding(padding)
         ) {
             StatsActionBar(
-                filterIds = filterIds,
+                filterIds        = filterIds,
                 hasEnoughPlayers = allStats.size >= 2,
-                onCompareClick = { compareDialogOpen = true },
-                onClearFilter = { filterIds = null }
+                hasPlayers       = allStats.isNotEmpty(),
+                onCompareClick   = { compareDialogOpen = true },
+                onHeatmapClick   = { heatmapDialogOpen = true },
+                onClearFilter    = { filterIds = null }
             )
 
             LazyColumn(
@@ -164,6 +168,17 @@ fun StatsScreen(
                 }
             )
         }
+
+        if (heatmapDialogOpen) {
+            SelectPlayerForHeatmapDialog(
+                allPlayers = allStats,
+                onDismiss  = { heatmapDialogOpen = false },
+                onSelect   = { playerId ->
+                    heatmapDialogOpen = false
+                    onHeatmapClick(playerId)
+                }
+            )
+        }
     }
 }
 
@@ -174,10 +189,12 @@ fun StatsScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun StatsActionBar(
-    filterIds: Set<Long>?,
+    filterIds:        Set<Long>?,
     hasEnoughPlayers: Boolean,
-    onCompareClick: () -> Unit,
-    onClearFilter: () -> Unit
+    hasPlayers:       Boolean,
+    onCompareClick:   () -> Unit,
+    onHeatmapClick:   () -> Unit,
+    onClearFilter:    () -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -191,6 +208,13 @@ private fun StatsActionBar(
             enabled = hasEnoughPlayers
         ) {
             Text("Vergleichen")
+        }
+
+        Button(
+            onClick = onHeatmapClick,
+            enabled = hasPlayers
+        ) {
+            Text("Heatmap")
         }
 
         if (filterIds != null) {
@@ -355,6 +379,68 @@ private fun StatCard(name: String, value: String) {
                 overflow   = TextOverflow.Ellipsis,
                 color      = MaterialTheme.colorScheme.onPrimaryContainer
             )
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Single-player selection dialog for Heatmap
+// ---------------------------------------------------------------------------
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SelectPlayerForHeatmapDialog(
+    allPlayers: List<PlayerStats>,
+    onDismiss:  () -> Unit,
+    onSelect:   (Long) -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape        = RoundedCornerShape(16.dp),
+            tonalElevation = 6.dp
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(24.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                Text("Spieler auswählen", style = MaterialTheme.typography.titleLarge)
+                Spacer(Modifier.height(16.dp))
+
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement   = Arrangement.spacedBy(8.dp)
+                ) {
+                    allPlayers.forEach { player ->
+                        Card(
+                            onClick  = { onSelect(player.playerId) },
+                            modifier = Modifier.size(72.dp),
+                            colors   = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        ) {
+                            Box(
+                                modifier            = Modifier.fillMaxSize(),
+                                contentAlignment    = Alignment.Center
+                            ) {
+                                Text(
+                                    text      = player.playerName,
+                                    style     = MaterialTheme.typography.labelSmall,
+                                    textAlign = TextAlign.Center,
+                                    maxLines  = 2,
+                                    overflow  = TextOverflow.Ellipsis,
+                                    modifier  = Modifier.padding(6.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+                TextButton(onClick = onDismiss, modifier = Modifier.align(Alignment.End)) {
+                    Text("Abbrechen")
+                }
+            }
         }
     }
 }

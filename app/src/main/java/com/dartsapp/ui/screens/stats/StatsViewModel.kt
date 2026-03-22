@@ -61,3 +61,20 @@ class StatsDetailViewModel @Inject constructor(
     val fieldFrequencies: StateFlow<List<FieldHitFrequency>> = getFieldFrequencyUseCase(playerId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 }
+
+@HiltViewModel
+class HeatmapViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle,
+    getPlayerStatsUseCase: GetPlayerStatsUseCase,
+    getFieldFrequencyUseCase: GetFieldFrequencyUseCase
+) : ViewModel() {
+
+    private val playerId: Long = checkNotNull(savedStateHandle["playerId"])
+
+    val playerName: StateFlow<String> = getPlayerStatsUseCase(playerId)
+        .map { it?.playerName ?: "" }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
+
+    val frequencies: StateFlow<List<FieldHitFrequency>> = getFieldFrequencyUseCase(playerId)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+}

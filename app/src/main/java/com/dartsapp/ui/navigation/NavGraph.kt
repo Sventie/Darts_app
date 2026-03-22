@@ -16,6 +16,7 @@ import com.dartsapp.ui.screens.home.HomeScreen
 import com.dartsapp.ui.screens.players.PlayerManagementScreen
 import com.dartsapp.ui.screens.setup.GameSetupScreen
 import com.dartsapp.ui.screens.setup.GameSetupViewModel
+import com.dartsapp.ui.screens.stats.HeatmapScreen
 import com.dartsapp.ui.screens.stats.StatsScreen
 
 @Composable
@@ -66,7 +67,19 @@ fun DartsNavGraph(navController: NavHostController) {
         }
 
         composable(Screen.Stats.route) {
-            StatsScreen(onBack = { navController.popBackStack() })
+            StatsScreen(
+                onBack         = { navController.popBackStack() },
+                onHeatmapClick = { playerId ->
+                    navController.navigate(Screen.Heatmap.createRoute(playerId))
+                }
+            )
+        }
+
+        composable(
+            route     = Screen.Heatmap.route,
+            arguments = listOf(navArgument("playerId") { type = NavType.LongType })
+        ) {
+            HeatmapScreen(onBack = { navController.popBackStack() })
         }
     }
 }
