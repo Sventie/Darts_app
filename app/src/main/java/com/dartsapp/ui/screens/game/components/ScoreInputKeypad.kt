@@ -59,7 +59,7 @@ fun ScoreInputKeypad(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 8.dp, top = 8.dp, bottom = 8.dp),
+                .padding(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             ToggleButton(
