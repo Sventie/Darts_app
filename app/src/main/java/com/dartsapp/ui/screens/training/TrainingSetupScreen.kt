@@ -188,6 +188,7 @@ fun TrainingSetupScreen(
                     firstRow.forEach { session ->
                         RecentResultCard(session = session, modifier = Modifier.weight(1f))
                     }
+                    repeat(5 - firstRow.size) { Spacer(Modifier.weight(1f)) }
                 }
                 if (secondRow.isNotEmpty()) {
                     Spacer(Modifier.height(6.dp))
@@ -198,6 +199,7 @@ fun TrainingSetupScreen(
                         secondRow.forEach { session ->
                             RecentResultCard(session = session, modifier = Modifier.weight(1f))
                         }
+                        repeat(5 - secondRow.size) { Spacer(Modifier.weight(1f)) }
                     }
                 }
             }
