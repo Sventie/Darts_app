@@ -1,6 +1,5 @@
 package com.dartsapp.ui.screens.training
 
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -183,18 +182,22 @@ fun TrainingSetupScreen(
                 val firstRow = recentSessions.take(5)
                 val secondRow = recentSessions.drop(5).take(5)
                 Row(
-                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    firstRow.forEach { session -> RecentResultCard(session = session) }
+                    firstRow.forEach { session ->
+                        RecentResultCard(session = session, modifier = Modifier.weight(1f))
+                    }
                 }
                 if (secondRow.isNotEmpty()) {
                     Spacer(Modifier.height(6.dp))
                     Row(
-                        modifier = Modifier.horizontalScroll(rememberScrollState()),
+                        modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        secondRow.forEach { session -> RecentResultCard(session = session) }
+                        secondRow.forEach { session ->
+                            RecentResultCard(session = session, modifier = Modifier.weight(1f))
+                        }
                     }
                 }
             }
@@ -291,7 +294,7 @@ private fun DifficultyCard(
 }
 
 @Composable
-private fun RecentResultCard(session: TrainingSessionEntity) {
+private fun RecentResultCard(session: TrainingSessionEntity, modifier: Modifier = Modifier) {
     val mode = runCatching { TrainingMode.valueOf(session.mode) }.getOrNull()
     val difficulty = runCatching { TrainingDifficulty.valueOf(session.difficulty) }.getOrNull()
     val dateStr = SimpleDateFormat("dd.MM.yy", Locale.getDefault())
@@ -302,6 +305,7 @@ private fun RecentResultCard(session: TrainingSessionEntity) {
     }
 
     Card(
+        modifier = modifier,
         shape = CARD_CORNER,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
