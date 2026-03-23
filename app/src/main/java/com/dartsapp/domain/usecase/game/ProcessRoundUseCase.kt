@@ -46,6 +46,7 @@ class ProcessRoundUseCase @Inject constructor(
         )
 
         // Pad to 3 darts with misses if fewer (e.g. won on dart 1 or 2)
+        val actualDartCount = darts.size
         val paddedDarts = darts.toMutableList()
         while (paddedDarts.size < 3) {
             paddedDarts.add(DartInput(field = 0, multiplier = ScoreMultiplier.SINGLE, scoreValue = 0))
@@ -58,7 +59,10 @@ class ProcessRoundUseCase @Inject constructor(
                     dartPosition = i + 1,
                     field = dart.field,
                     multiplier = dart.multiplier.name,
-                    scoreValue = dart.scoreValue
+                    scoreValue = dart.scoreValue,
+                    isPadding = i >= actualDartCount,
+                    tapX = dart.tapX,
+                    tapY = dart.tapY
                 )
             }
         )

@@ -180,14 +180,13 @@ fun GameScreen(
                     ) {
                         // Left: score input (dartboard or keypad)
                         ScoreInputKeypad(
-                            dartsEntered = state.currentRoundDarts.size,
+                            currentRoundDarts = state.currentRoundDarts,
                             onDartEntered = viewModel::onDartEntered,
                             onUndo = viewModel::onUndoLastDart,
                             canUndo = state.currentRoundDarts.isNotEmpty() || state.lastCommittedRound != null,
                             modifier = Modifier
                                 .fillMaxHeight()
                                 .weight(0.58f)
-                                .padding(start = 8.dp, end = 4.dp)
                         )
 
                         VerticalDivider(modifier = Modifier.fillMaxHeight().padding(vertical = 8.dp))
@@ -239,7 +238,7 @@ fun GameScreen(
                         Spacer(modifier = Modifier.height(8.dp))
 
                         ScoreInputKeypad(
-                            dartsEntered = state.currentRoundDarts.size,
+                            currentRoundDarts = state.currentRoundDarts,
                             onDartEntered = viewModel::onDartEntered,
                             onUndo = viewModel::onUndoLastDart,
                             canUndo = state.currentRoundDarts.isNotEmpty() || state.lastCommittedRound != null,
@@ -269,29 +268,39 @@ private fun GameSidePanel(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier.fillMaxHeight().padding(vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        modifier = modifier.fillMaxHeight().padding(vertical = 8.dp)
     ) {
-        // Player cards in a 2-column grid (weight(1f) so it fills available space)
+        // Player cards – natural (rectangular) height, 2 per row, generous spacing
         val players = state.activeGame.players
-        val columns = if (players.size > 2) 2 else players.size.coerceAtLeast(1)
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(columns),
-            modifier = Modifier.fillMaxWidth().weight(1f),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+        val rows = players.chunked(2)
+        Column(
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(players.indices.toList()) { idx ->
-                val isCurrent = idx == state.activeGame.currentPlayerIndex
-                PlayerScoreCard(
-                    player = players[idx],
-                    isCurrentPlayer = isCurrent,
-                    displayScore = if (isCurrent) state.projectedScore else players[idx].remainingScore
-                )
+            rows.forEach { rowPlayers ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    rowPlayers.forEachIndexed { colIdx, player ->
+                        val globalIdx = players.indexOf(player)
+                        val isCurrent = globalIdx == state.activeGame.currentPlayerIndex
+                        PlayerScoreCard(
+                            player = player,
+                            isCurrentPlayer = isCurrent,
+                            displayScore = if (isCurrent) state.projectedScore else player.remainingScore,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    // Fill empty slot if row has only one player
+                    if (rowPlayers.size == 1) Spacer(Modifier.weight(1f))
+                }
             }
         }
 
+        Spacer(Modifier.weight(1f))
+
         HorizontalDivider()
+        Spacer(Modifier.height(8.dp))
 
         // Dart throws + checkout suggestion – always visible
         Row(
@@ -306,12 +315,10 @@ private fun GameSidePanel(
                 modifier = Modifier.weight(1f)
             )
 
-            state.checkoutSuggestion?.let { suggestion ->
-                CheckoutSuggestionCard(
-                    suggestion = suggestion,
-                    modifier = Modifier.weight(1f)
-                )
-            }
+            CheckoutSuggestionCard(
+                suggestion = state.checkoutSuggestion,
+                modifier   = Modifier.weight(1f)
+            )
         }
     }
 }
@@ -365,7 +372,7 @@ private fun DartsInfoCard(
 
 @Composable
 private fun CheckoutSuggestionCard(
-    suggestion: List<String>,
+    suggestion: List<String>?,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -385,7 +392,7 @@ private fun CheckoutSuggestionCard(
                     color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
                 )
                 Text(
-                    text = suggestion.joinToString("  –  "),
+                    text = if (suggestion != null) suggestion.joinToString("  –  ") else "–",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSecondaryContainer
@@ -428,14 +435,14 @@ private fun RoundSummaryRow(
             )
         }
 
-        state.checkoutSuggestion?.let { suggestion ->
-            Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.End) {
-                Text(
-                    text = "Checkout",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                suggestion.forEach { dart ->
+        Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.End) {
+            Text(
+                text = "Checkout",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            if (state.checkoutSuggestion != null) {
+                state.checkoutSuggestion.forEach { dart ->
                     Text(
                         text = dart,
                         style = MaterialTheme.typography.titleMedium,
@@ -443,6 +450,13 @@ private fun RoundSummaryRow(
                         textAlign = TextAlign.End
                     )
                 }
+            } else {
+                Text(
+                    text = "–",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.End
+                )
             }
         }
     }

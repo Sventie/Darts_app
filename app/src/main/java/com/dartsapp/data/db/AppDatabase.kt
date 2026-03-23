@@ -21,7 +21,7 @@ import com.dartsapp.data.db.entity.RoundEntity
         RoundEntity::class,
         DartThrowEntity::class
     ],
-    version = 1,
+    version = 3,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {

@@ -199,8 +199,10 @@ private fun PlayerCard(
     stats: PlayerStats?,
     modifier: Modifier = Modifier
 ) {
-    // Pick one random stat label per player, stable across recompositions
-    val statLabel = remember(player.id, stats) { randomStatLabel(stats) }
+    // Pick one random stat label per player; only re-pick when stats first becomes available,
+    // not on every stats update (avoids flickering when game start triggers a DB write).
+    val hasStats = stats != null && stats.gamesPlayed > 0
+    val statLabel = remember(player.id, hasStats) { if (hasStats) randomStatLabel(stats) else null }
 
     Card(
         modifier = modifier.size(144.dp),

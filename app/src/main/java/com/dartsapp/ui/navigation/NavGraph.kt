@@ -10,12 +10,13 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+
 import com.dartsapp.ui.screens.game.GameScreen
 import com.dartsapp.ui.screens.home.HomeScreen
 import com.dartsapp.ui.screens.players.PlayerManagementScreen
 import com.dartsapp.ui.screens.setup.GameSetupScreen
 import com.dartsapp.ui.screens.setup.GameSetupViewModel
-import com.dartsapp.ui.screens.stats.StatsDetailScreen
+import com.dartsapp.ui.screens.stats.HeatmapScreen
 import com.dartsapp.ui.screens.stats.StatsScreen
 
 @Composable
@@ -54,31 +55,31 @@ fun DartsNavGraph(navController: NavHostController) {
             route = Screen.Game.route,
             arguments = listOf(navArgument("gameId") { type = NavType.LongType })
         ) {
-            val goHome = {
-                navController.navigate(Screen.Home.route) {
-                    popUpTo(Screen.Home.route) { inclusive = true }
+            val goSetup = {
+                navController.navigate(Screen.GameSetup.route) {
+                    popUpTo(Screen.Home.route) { inclusive = false }
                 }
             }
             GameScreen(
-                onGameOver    = { goHome() },
-                onAbandonGame = { goHome() }
+                onGameOver    = { goSetup() },
+                onAbandonGame = { goSetup() }
             )
         }
 
         composable(Screen.Stats.route) {
             StatsScreen(
-                onBack = { navController.popBackStack() },
-                onSelectPlayer = { playerId ->
-                    navController.navigate(Screen.StatsDetail.createRoute(playerId))
+                onBack         = { navController.popBackStack() },
+                onHeatmapClick = { playerId ->
+                    navController.navigate(Screen.Heatmap.createRoute(playerId))
                 }
             )
         }
 
         composable(
-            route = Screen.StatsDetail.route,
+            route     = Screen.Heatmap.route,
             arguments = listOf(navArgument("playerId") { type = NavType.LongType })
         ) {
-            StatsDetailScreen(onBack = { navController.popBackStack() })
+            HeatmapScreen(onBack = { navController.popBackStack() })
         }
     }
 }

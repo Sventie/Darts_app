@@ -2,17 +2,16 @@ package com.dartsapp.ui.screens.game.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -36,177 +35,176 @@ private enum class InputMode { KEYPAD, BOARD }
 /** Corner radius matching the player score cards. */
 private val BTN_CORNER = RoundedCornerShape(8.dp)
 
-/** Height for mode/multiplier/special buttons. */
+/** Uniform height for ALL interactive buttons (toggle, keypad, specials, undo). */
 private val BTN_H: Dp = 48.dp
 
-/** Larger gap between logical button groups (mode→multiplier, multiplier→grid). */
+/** Gap between logical button groups in keypad mode. */
 private val GROUP_GAP: Dp = 20.dp
-
-/** Smaller gap within a group or between grid and special row. */
-private val INNER_GAP: Dp = 6.dp
 
 @Composable
 fun ScoreInputKeypad(
-    dartsEntered: Int,
+    currentRoundDarts: List<DartInput>,
     onDartEntered: (DartInput) -> Unit,
     onUndo: () -> Unit,
-    canUndo: Boolean = dartsEntered > 0,
+    canUndo: Boolean = currentRoundDarts.isNotEmpty(),
     modifier: Modifier = Modifier
 ) {
-    var inputMode by remember { mutableStateOf(InputMode.KEYPAD) }
+    var inputMode by remember { mutableStateOf(InputMode.BOARD) }
     var selectedMultiplier by remember { mutableStateOf(ScoreMultiplier.SINGLE) }
 
-    // fillMaxHeight so the inner weight(1f) on the grid can resolve against a bounded height.
-    // The parent always provides a bounded height: in landscape via fillMaxHeight().weight(0.58f),
-    // in portrait via fillMaxWidth().weight(1f).
-    Column(modifier = modifier.fillMaxHeight().padding(horizontal = 8.dp, vertical = 8.dp)) {
+    // Total vertical space the toggle overlay row occupies: BTN_H + 4dp top + 4dp bottom
+    val overlayRowH: Dp = BTN_H + 8.dp
 
-        // ── Input mode toggle ──────────────────────────────────────────
+    Box(modifier = modifier) {
+
+        // ── Mode content ──────────────────────────────────────────────────
+        when (inputMode) {
+
+            // Board: dartboard fills the FULL box – the toggle gap is part of the board
+            InputMode.BOARD -> {
+                BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                    val boardSize = minOf(maxWidth, maxHeight)
+                    DartBoardInput(
+                        onDartEntered     = onDartEntered,
+                        currentRoundDarts = currentRoundDarts,
+                        modifier          = Modifier.size(boardSize).align(Alignment.Center).padding(6.dp)
+                    )
+                }
+            }
+
+            // Keypad: content lives below the toggle row and above the Rückgängig button
+            InputMode.KEYPAD -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .padding(
+                            start  = 8.dp,
+                            end    = 8.dp,
+                            top    = overlayRowH,
+                            bottom = overlayRowH
+                        )
+                ) {
+                    Spacer(modifier = Modifier.height(GROUP_GAP))
+
+                    // Multiplier row
+                    Row(
+                        modifier              = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        ScoreMultiplier.entries.forEach { mult ->
+                            ToggleButton(
+                                selected = selectedMultiplier == mult,
+                                onClick  = { selectedMultiplier = mult },
+                                label    = mult.name.lowercase().replaceFirstChar { it.uppercase() },
+                                modifier = Modifier.weight(1f).height(BTN_H)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(GROUP_GAP))
+
+                    // Number grid 1-20: 4 rows × 5 cols, scales to fill remaining height
+                    Column(
+                        modifier            = Modifier.fillMaxWidth().weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        (1..20).chunked(5).forEach { row ->
+                            Row(
+                                modifier              = Modifier.fillMaxWidth().weight(1f),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                row.forEach { number ->
+                                    OutlinedButton(
+                                        onClick = {
+                                            val eff = if (number == 25 && selectedMultiplier == ScoreMultiplier.TRIPLE)
+                                                ScoreMultiplier.SINGLE else selectedMultiplier
+                                            onDartEntered(DartInput(number, eff, number * eff.value))
+                                            selectedMultiplier = ScoreMultiplier.SINGLE
+                                        },
+                                        shape          = BTN_CORNER,
+                                        modifier       = Modifier.weight(1f).fillMaxHeight(),
+                                        contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
+                                    ) {
+                                        Text("$number", style = MaterialTheme.typography.titleLarge)
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(GROUP_GAP))
+
+                    // Special buttons
+                    val isSingle = selectedMultiplier == ScoreMultiplier.SINGLE
+                    Row(
+                        modifier              = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick  = {
+                                onDartEntered(DartInput(0, ScoreMultiplier.SINGLE, 0))
+                                selectedMultiplier = ScoreMultiplier.SINGLE
+                            },
+                            enabled  = isSingle,
+                            shape    = BTN_CORNER,
+                            modifier = Modifier.weight(1f).height(BTN_H)
+                        ) { Text("Daneben") }
+
+                        OutlinedButton(
+                            onClick  = {
+                                onDartEntered(DartInput(25, ScoreMultiplier.SINGLE, 25))
+                                selectedMultiplier = ScoreMultiplier.SINGLE
+                            },
+                            enabled  = isSingle,
+                            shape    = BTN_CORNER,
+                            modifier = Modifier.weight(1f).height(BTN_H)
+                        ) { Text("Bull") }
+
+                        OutlinedButton(
+                            onClick  = {
+                                onDartEntered(DartInput(50, ScoreMultiplier.SINGLE, 50))
+                                selectedMultiplier = ScoreMultiplier.SINGLE
+                            },
+                            enabled  = isSingle,
+                            shape    = BTN_CORNER,
+                            modifier = Modifier.weight(1f).height(BTN_H)
+                        ) { Text("Bullseye") }
+                    }
+                }
+            }
+        }
+
+        // ── Toggle buttons overlaid at top-left (Scheibe) and top-right (Tastatur) ──
+        // Gap between them is empty in keypad mode; filled by the board in board mode.
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            modifier              = Modifier.fillMaxWidth().padding(4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            ToggleButton(
-                selected = inputMode == InputMode.KEYPAD,
-                onClick  = { inputMode = InputMode.KEYPAD },
-                label    = "Tastatur",
-                modifier = Modifier.weight(1f).height(BTN_H)
-            )
             ToggleButton(
                 selected = inputMode == InputMode.BOARD,
                 onClick  = { inputMode = InputMode.BOARD },
                 label    = "Scheibe",
-                modifier = Modifier.weight(1f).height(BTN_H)
+                modifier = Modifier.height(BTN_H)
+            )
+            ToggleButton(
+                selected = inputMode == InputMode.KEYPAD,
+                onClick  = { inputMode = InputMode.KEYPAD },
+                label    = "Tastatur",
+                modifier = Modifier.height(BTN_H)
             )
         }
 
-        when (inputMode) {
-
-            // ── Keypad mode ───────────────────────────────────────────
-            InputMode.KEYPAD -> {
-                Spacer(modifier = Modifier.height(GROUP_GAP))
-
-                // Multiplier row
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    ScoreMultiplier.entries.forEach { mult ->
-                        ToggleButton(
-                            selected = selectedMultiplier == mult,
-                            onClick  = { selectedMultiplier = mult },
-                            label    = mult.name.lowercase().replaceFirstChar { it.uppercase() },
-                            modifier = Modifier.weight(1f).height(BTN_H)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(GROUP_GAP))
-
-                // Number grid 1-20 – takes all remaining height via weight
-                val numbers = (1..20).toList()
-                LazyVerticalGrid(
-                    columns               = GridCells.Fixed(5),
-                    modifier              = Modifier.fillMaxWidth().weight(1f),
-                    verticalArrangement   = Arrangement.spacedBy(4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    items(numbers) { number ->
-                        OutlinedButton(
-                            onClick = {
-                                val eff = if (number == 25 && selectedMultiplier == ScoreMultiplier.TRIPLE)
-                                    ScoreMultiplier.SINGLE else selectedMultiplier
-                                onDartEntered(DartInput(number, eff, number * eff.value))
-                                selectedMultiplier = ScoreMultiplier.SINGLE
-                            },
-                            shape          = BTN_CORNER,
-                            modifier       = Modifier.fillMaxHeight(),
-                            contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
-                        ) {
-                            Text("$number", style = MaterialTheme.typography.titleMedium)
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(GROUP_GAP))
-
-                // Special buttons row
-                Row(
-                    modifier              = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment     = Alignment.CenterVertically
-                ) {
-                    OutlinedButton(
-                        onClick  = {
-                            onDartEntered(DartInput(0, ScoreMultiplier.SINGLE, 0))
-                            selectedMultiplier = ScoreMultiplier.SINGLE
-                        },
-                        shape    = BTN_CORNER,
-                        modifier = Modifier.weight(1f).height(BTN_H)
-                    ) { Text("Daneben") }
-
-                    OutlinedButton(
-                        onClick  = {
-                            val mult = if (selectedMultiplier == ScoreMultiplier.TRIPLE) ScoreMultiplier.DOUBLE else selectedMultiplier
-                            onDartEntered(DartInput(25, mult, 25 * mult.value))
-                            selectedMultiplier = ScoreMultiplier.SINGLE
-                        },
-                        shape    = BTN_CORNER,
-                        modifier = Modifier.weight(1f).height(BTN_H)
-                    ) { Text("Bull") }
-
-                    OutlinedButton(
-                        onClick  = {
-                            onDartEntered(DartInput(50, ScoreMultiplier.SINGLE, 50))
-                            selectedMultiplier = ScoreMultiplier.SINGLE
-                        },
-                        shape    = BTN_CORNER,
-                        modifier = Modifier.weight(1f).height(BTN_H)
-                    ) { Text("Bullseye") }
-
-                    Button(
-                        onClick  = onUndo,
-                        enabled  = canUndo,
-                        shape    = BTN_CORNER,
-                        colors   = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                        modifier = Modifier.weight(1f).height(BTN_H)
-                    ) { Text("Rückgängig") }
-                }
-            }
-
-            // ── Board mode ────────────────────────────────────────────
-            InputMode.BOARD -> {
-                Spacer(modifier = Modifier.height(INNER_GAP))
-
-                Box(
-                    modifier         = Modifier.fillMaxWidth().weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    DartBoardInput(
-                        onDartEntered = onDartEntered,
-                        dartsEntered  = dartsEntered,
-                        modifier      = Modifier
-                            .fillMaxHeight()
-                            .aspectRatio(1f, matchHeightConstraintsFirst = true)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(INNER_GAP))
-
-                Row(
-                    modifier              = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    Button(
-                        onClick  = onUndo,
-                        enabled  = canUndo,
-                        shape    = BTN_CORNER,
-                        colors   = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                        modifier = Modifier.height(BTN_H)
-                    ) { Text("Rückgängig") }
-                }
-            }
-        }
+        // ── Rückgängig: always bottom-right, same size in both modes ──────
+        Button(
+            onClick  = onUndo,
+            enabled  = canUndo,
+            shape    = BTN_CORNER,
+            colors   = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(4.dp)   // margin outside the button – does NOT shrink the button
+                .height(BTN_H)
+        ) { Text("Rückgängig") }
     }
 }
 

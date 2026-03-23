@@ -24,5 +24,8 @@ data class DartThrowEntity(
     @ColumnInfo(name = "dart_position") val dartPosition: Int,
     val field: Int,
     val multiplier: String,
-    @ColumnInfo(name = "score_value") val scoreValue: Int
+    @ColumnInfo(name = "score_value") val scoreValue: Int,
+    @ColumnInfo(name = "is_padding") val isPadding: Boolean = false,
+    @ColumnInfo(name = "tap_x") val tapX: Float? = null,
+    @ColumnInfo(name = "tap_y") val tapY: Float? = null
 )
