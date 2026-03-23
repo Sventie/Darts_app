@@ -36,7 +36,6 @@ import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -96,10 +95,6 @@ fun GameSetupScreen(viewModel: GameSetupViewModel, onBack: () -> Unit, onTrainin
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
                     }
                     Text("Neues Spiel", style = MaterialTheme.typography.titleLarge)
-                    Spacer(Modifier.weight(1f))
-                    TextButton(onClick = onTraining) {
-                        Text("Training")
-                    }
                 }
             }
         }
@@ -114,21 +109,34 @@ fun GameSetupScreen(viewModel: GameSetupViewModel, onBack: () -> Unit, onTrainin
             Text("Spieler", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(8.dp))
 
-            LazyRow(
-                state = lazyListState,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.Top
             ) {
-                items(selectedPlayers, key = { it.id }) { player ->
-                    ReorderableItem(reorderState, key = player.id) { _ ->
-                        PlayerCard(
-                            player = player,
-                            stats = playerStats[player.id],
-                            modifier = Modifier.draggableHandle()
-                        )
+                LazyRow(
+                    state = lazyListState,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    items(selectedPlayers, key = { it.id }) { player ->
+                        ReorderableItem(reorderState, key = player.id) { _ ->
+                            PlayerCard(
+                                player = player,
+                                stats = playerStats[player.id],
+                                modifier = Modifier.draggableHandle()
+                            )
+                        }
+                    }
+                    item(key = "add_button") {
+                        AddPlayerCard(onClick = { showPlayerDialog = true })
                     }
                 }
-                item(key = "add_button") {
-                    AddPlayerCard(onClick = { showPlayerDialog = true })
+                Button(
+                    onClick = onTraining,
+                    modifier = Modifier.size(width = 160.dp, height = 144.dp),
+                    shape = CARD_CORNER
+                ) {
+                    Text("Training", style = MaterialTheme.typography.titleMedium)
                 }
             }
 
