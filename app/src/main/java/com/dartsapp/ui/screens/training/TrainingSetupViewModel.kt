@@ -48,16 +48,6 @@ class TrainingSetupViewModel @Inject constructor(
             else trainingDao.getRecentByPlayerAndMode(playerId, mode.name, limit = 10)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    init {
-        viewModelScope.launch {
-            players.collect { list ->
-                if (_selectedPlayerId.value == null && list.isNotEmpty()) {
-                    _selectedPlayerId.value = list.first().id
-                }
-            }
-        }
-    }
-
     fun selectPlayer(playerId: Long) {
         _selectedPlayerId.value = playerId
     }
