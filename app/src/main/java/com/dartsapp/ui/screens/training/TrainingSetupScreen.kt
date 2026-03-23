@@ -1,5 +1,6 @@
 package com.dartsapp.ui.screens.training
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,16 +33,19 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.dartsapp.data.db.entity.PlayerEntity
 import com.dartsapp.data.db.entity.TrainingSessionEntity
 import com.dartsapp.domain.model.TrainingDifficulty
 import com.dartsapp.domain.model.TrainingMode
+import com.dartsapp.ui.screens.setup.PlayerSelectionDialog
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -61,6 +65,17 @@ fun TrainingSetupScreen(
     val selectedMode by viewModel.selectedMode.collectAsState()
     val selectedDifficulty by viewModel.selectedDifficulty.collectAsState()
     val recentSessions by viewModel.recentSessions.collectAsState()
+
+    var showPlayerDialog by remember { mutableStateOf(false) }
+
+    if (showPlayerDialog) {
+        PlayerSelectionDialog(
+            players = players,
+            selectedIds = listOfNotNull(selectedPlayerId),
+            onToggle = { viewModel.selectPlayer(it) },
+            onDismiss = { showPlayerDialog = false }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -90,7 +105,7 @@ fun TrainingSetupScreen(
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            // Player selection
+            // Player selection via popup
             Text("Spieler", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(8.dp))
             if (players.isEmpty()) {
@@ -100,15 +115,26 @@ fun TrainingSetupScreen(
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
             } else {
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                val selectedPlayer = players.find { it.id == selectedPlayerId }
+                Card(
+                    onClick = { showPlayerDialog = true },
+                    modifier = Modifier.size(72.dp),
+                    shape = CARD_CORNER,
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (selectedPlayer != null)
+                            MaterialTheme.colorScheme.primaryContainer
+                        else
+                            MaterialTheme.colorScheme.surfaceVariant
+                    )
                 ) {
-                    players.forEach { player ->
-                        PlayerSelectCard(
-                            player = player,
-                            isSelected = player.id == selectedPlayerId,
-                            onClick = { viewModel.selectPlayer(player.id) }
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(
+                            text = selectedPlayer?.name ?: "?",
+                            style = MaterialTheme.typography.labelMedium,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 4.dp)
                         )
                     }
                 }
@@ -149,26 +175,38 @@ fun TrainingSetupScreen(
                 }
             }
 
-            // Recent results
+            // Recent results – last 10 as a 2×5 compact grid
             if (recentSessions.isNotEmpty()) {
                 Spacer(Modifier.height(24.dp))
                 Text("Letzte Ergebnisse", style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(8.dp))
-                recentSessions.forEach { session ->
-                    RecentResultCard(session = session)
+                val firstRow = recentSessions.take(5)
+                val secondRow = recentSessions.drop(5).take(5)
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    firstRow.forEach { session -> RecentResultCard(session = session) }
+                }
+                if (secondRow.isNotEmpty()) {
                     Spacer(Modifier.height(6.dp))
+                    Row(
+                        modifier = Modifier.horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        secondRow.forEach { session -> RecentResultCard(session = session) }
+                    }
                 }
             }
 
             Spacer(Modifier.height(24.dp))
 
             // Start button
-            val canStart = selectedPlayerId != null && selectedMode != null
+            val canStart = selectedPlayerId != null
             Button(
                 onClick = {
-                    val mode = selectedMode ?: return@Button
                     val playerId = selectedPlayerId ?: return@Button
-                    onStartTraining(mode, selectedDifficulty, playerId)
+                    onStartTraining(selectedMode, selectedDifficulty, playerId)
                 },
                 enabled = canStart,
                 modifier = Modifier
@@ -178,34 +216,6 @@ fun TrainingSetupScreen(
             ) {
                 Text("Training starten", style = MaterialTheme.typography.titleMedium)
             }
-        }
-    }
-}
-
-@Composable
-private fun PlayerSelectCard(
-    player: PlayerEntity,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier.size(72.dp),
-        shape = CARD_CORNER,
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer
-            else MaterialTheme.colorScheme.surfaceVariant
-        )
-    ) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(
-                text = player.name,
-                style = MaterialTheme.typography.labelMedium,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 4.dp)
-            )
         }
     }
 }
@@ -287,48 +297,35 @@ private fun RecentResultCard(session: TrainingSessionEntity) {
     val dateStr = SimpleDateFormat("dd.MM.yy", Locale.getDefault())
         .format(Date(session.completedAt))
     val resultStr = when (mode) {
-        TrainingMode.SCORING_ROUNDS -> "Ø ${session.result / 10.0} Punkte"
+        TrainingMode.SCORING_ROUNDS -> "Ø ${session.result / 10.0}"
         else -> "${session.result} Darts"
     }
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
         shape = CARD_CORNER,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         )
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Column {
-                Text(
-                    text = mode?.displayName() ?: session.mode,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = difficulty?.displayName() ?: session.difficulty,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                )
-            }
-            Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    text = resultStr,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = dateStr,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                )
-            }
+            Text(
+                text = resultStr,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = difficulty?.displayName() ?: session.difficulty,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+            Text(
+                text = dateStr,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+            )
         }
     }
 }

@@ -14,9 +14,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -32,24 +34,36 @@ class TrainingSetupViewModel @Inject constructor(
     private val _selectedPlayerId = MutableStateFlow<Long?>(null)
     val selectedPlayerId: StateFlow<Long?> = _selectedPlayerId.asStateFlow()
 
-    private val _selectedMode = MutableStateFlow<TrainingMode?>(null)
-    val selectedMode: StateFlow<TrainingMode?> = _selectedMode.asStateFlow()
+    private val _selectedMode = MutableStateFlow(TrainingMode.entries.first())
+    val selectedMode: StateFlow<TrainingMode> = _selectedMode.asStateFlow()
 
     private val _selectedDifficulty = MutableStateFlow(TrainingDifficulty.BEGINNER)
     val selectedDifficulty: StateFlow<TrainingDifficulty> = _selectedDifficulty.asStateFlow()
 
     val recentSessions: StateFlow<List<TrainingSessionEntity>> =
-        _selectedPlayerId.flatMapLatest { playerId ->
+        combine(_selectedPlayerId, _selectedMode) { playerId, mode ->
+            Pair(playerId, mode)
+        }.flatMapLatest { (playerId, mode) ->
             if (playerId == null) flowOf(emptyList())
-            else trainingDao.getRecentByPlayer(playerId, limit = 5)
+            else trainingDao.getRecentByPlayerAndMode(playerId, mode.name, limit = 10)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    init {
+        viewModelScope.launch {
+            players.collect { list ->
+                if (_selectedPlayerId.value == null && list.isNotEmpty()) {
+                    _selectedPlayerId.value = list.first().id
+                }
+            }
+        }
+    }
+
     fun selectPlayer(playerId: Long) {
-        _selectedPlayerId.value = if (_selectedPlayerId.value == playerId) null else playerId
+        _selectedPlayerId.value = playerId
     }
 
     fun selectMode(mode: TrainingMode) {
-        _selectedMode.value = if (_selectedMode.value == mode) null else mode
+        _selectedMode.value = mode
     }
 
     fun selectDifficulty(difficulty: TrainingDifficulty) {
@@ -57,5 +71,5 @@ class TrainingSetupViewModel @Inject constructor(
     }
 
     val canStart: Boolean
-        get() = _selectedPlayerId.value != null && _selectedMode.value != null
+        get() = _selectedPlayerId.value != null
 }
