@@ -28,18 +28,12 @@ private fun polarToNorm(r: Float, number: Int): Pair<Float, Float> {
  */
 fun targetCenterForZielfeldField(fieldStr: String): Pair<Float, Float> = when {
     fieldStr == "Bullseye" || fieldStr == "Bull" -> 0f to 0f
-    fieldStr.startsWith("S") -> {
-        val n = fieldStr.substring(1).toIntOrNull() ?: return@when 0f to 0f
-        polarToNorm((R_BULL + R_TRIPLE_IN) / 2f, n)
-    }
-    fieldStr.startsWith("D") -> {
-        val n = fieldStr.substring(1).toIntOrNull() ?: return@when 0f to 0f
-        polarToNorm((R_DOUBLE_IN + R_DOUBLE_OUT) / 2f, n)
-    }
-    fieldStr.startsWith("T") -> {
-        val n = fieldStr.substring(1).toIntOrNull() ?: return@when 0f to 0f
-        polarToNorm((R_TRIPLE_IN + R_TRIPLE_OUT) / 2f, n)
-    }
+    fieldStr.startsWith("S") ->
+        polarToNorm((R_BULL + R_TRIPLE_IN) / 2f, fieldStr.substring(1).toIntOrNull() ?: return@targetCenterForZielfeldField 0f to 0f)
+    fieldStr.startsWith("D") ->
+        polarToNorm((R_DOUBLE_IN + R_DOUBLE_OUT) / 2f, fieldStr.substring(1).toIntOrNull() ?: return@targetCenterForZielfeldField 0f to 0f)
+    fieldStr.startsWith("T") ->
+        polarToNorm((R_TRIPLE_IN + R_TRIPLE_OUT) / 2f, fieldStr.substring(1).toIntOrNull() ?: return@targetCenterForZielfeldField 0f to 0f)
     else -> 0f to 0f
 }
 
