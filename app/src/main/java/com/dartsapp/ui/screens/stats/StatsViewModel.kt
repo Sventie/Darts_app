@@ -8,6 +8,7 @@ import com.dartsapp.domain.model.PlayerStats
 import com.dartsapp.domain.usecase.player.GetPlayersUseCase
 import com.dartsapp.domain.usecase.stats.GetHeatPositionsUseCase
 import com.dartsapp.domain.usecase.stats.GetPlayerStatsUseCase
+import com.dartsapp.domain.usecase.stats.GetTrainingDispersionUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,7 +22,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import javax.inject.Inject
-import kotlin.math.sqrt
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
@@ -54,9 +54,9 @@ class StatsOverviewViewModel @Inject constructor(
 class HeatmapViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     getPlayersUseCase: GetPlayersUseCase,
-    private val getHeatPositionsUseCase: GetHeatPositionsUseCase
+    private val getHeatPositionsUseCase: GetHeatPositionsUseCase,
+    private val getTrainingDispersionUseCase: GetTrainingDispersionUseCase
 ) : ViewModel() {
-    private companion object { const val R_DOUBLE_OUT = 0.894f }
 
     private val initialPlayerId: Long = checkNotNull(savedStateHandle["playerId"])
 
@@ -87,17 +87,15 @@ class HeatmapViewModel @Inject constructor(
         .flatMapLatest { (pid, from, to) -> getHeatPositionsUseCase(pid, from, to) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val dispersion: StateFlow<Float> = hitPositions
-        .map { positions ->
-            if (positions.isEmpty()) 0f
-            else {
-                val meanX = positions.map { it.nx }.average().toFloat()
-                val meanY = positions.map { it.ny }.average().toFloat()
-                val variance = positions.map { (it.nx - meanX).let { d -> d * d } + (it.ny - meanY).let { d -> d * d } }.average().toFloat()
-                (sqrt(variance) / R_DOUBLE_OUT).coerceIn(0f, 1f)
-            }
-        }
+    /** RMS deviation from target, computed from Zielfeld + ATC training throws only. */
+    val dispersion: StateFlow<Float> = _selectedPlayerId
+        .flatMapLatest { getTrainingDispersionUseCase(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0f)
+
+    /** Number of training throws used to compute the dispersion. */
+    val trainingThrowCount: StateFlow<Int> = _selectedPlayerId
+        .flatMapLatest { getTrainingDispersionUseCase.throwCount(it) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
     fun selectPlayer(playerId: Long) {
         _selectedPlayerId.value = playerId

@@ -56,14 +56,15 @@ fun HeatmapScreen(
     onBack: () -> Unit,
     viewModel: HeatmapViewModel = hiltViewModel()
 ) {
-    val playerName   by viewModel.playerName.collectAsState()
-    val allPlayers   by viewModel.allPlayers.collectAsState()
-    val selectedId   by viewModel.selectedPlayerId.collectAsState()
-    val hitPositions by viewModel.hitPositions.collectAsState()
-    val gameCount    by viewModel.gameCount.collectAsState()
-    val fromGame     by viewModel.fromGame.collectAsState()
-    val toGame       by viewModel.toGame.collectAsState()
-    val dispersion   by viewModel.dispersion.collectAsState()
+    val playerName          by viewModel.playerName.collectAsState()
+    val allPlayers          by viewModel.allPlayers.collectAsState()
+    val selectedId          by viewModel.selectedPlayerId.collectAsState()
+    val hitPositions        by viewModel.hitPositions.collectAsState()
+    val gameCount           by viewModel.gameCount.collectAsState()
+    val fromGame            by viewModel.fromGame.collectAsState()
+    val toGame              by viewModel.toGame.collectAsState()
+    val dispersion          by viewModel.dispersion.collectAsState()
+    val trainingThrowCount  by viewModel.trainingThrowCount.collectAsState()
 
     var playerDialogOpen by remember { mutableStateOf(false) }
     var showHeatmap      by remember { mutableStateOf(true) }
@@ -139,69 +140,73 @@ fun HeatmapScreen(
 
                 if (!showHeatmap) {
                     Text(
-                        text  = "Streuung: ${"%.2f".format(dispersion)}",
+                        text  = "Ø Abweichung: ${"%.2f".format(dispersion)}",
                         style = MaterialTheme.typography.bodyMedium
                     )
-                }
-
-                HorizontalDivider()
-
-                Text(
-                    "Spielbereich",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                when {
-                    gameCount == 0 -> Text(
-                        "Noch keine Spiele.",
+                    Text(
+                        text  = "Basis: $trainingThrowCount Trainingswürfe",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    gameCount == 1 -> Text(
-                        "Spiel 1 von 1",
-                        style = MaterialTheme.typography.bodyMedium
+                }
+
+                if (showHeatmap) {
+                    HorizontalDivider()
+
+                    Text(
+                        "Spielbereich",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    else -> {
-                        Text(
-                            text  = "Spiel $fromGame – $effectiveTo von $gameCount",
+
+                    when {
+                        gameCount == 0 -> Text(
+                            "Noch keine Spiele.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        gameCount == 1 -> Text(
+                            "Spiel 1 von 1",
                             style = MaterialTheme.typography.bodyMedium
                         )
+                        else -> {
+                            Text(
+                                text  = "Spiel $fromGame – $effectiveTo von $gameCount",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
 
-                        // Two separate sliders avoid the "stuck when overlapping" problem
-                        // of RangeSlider. The from-slider is capped at effectiveTo,
-                        // the to-slider is capped at fromGame from below.
-                        Text(
-                            "Von",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Slider(
-                            value         = fromGame.toFloat(),
-                            onValueChange = { v ->
-                                val newFrom = v.roundToInt().coerceIn(1, effectiveTo)
-                                viewModel.setGameRange(newFrom, toGame)
-                            },
-                            valueRange    = 1f..gameCount.toFloat(),
-                            steps         = (gameCount - 2).coerceAtLeast(0),
-                            modifier      = Modifier.fillMaxWidth()
-                        )
+                            Text(
+                                "Von",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Slider(
+                                value         = fromGame.toFloat(),
+                                onValueChange = { v ->
+                                    val newFrom = v.roundToInt().coerceIn(1, effectiveTo)
+                                    viewModel.setGameRange(newFrom, toGame)
+                                },
+                                valueRange    = 1f..gameCount.toFloat(),
+                                steps         = (gameCount - 2).coerceAtLeast(0),
+                                modifier      = Modifier.fillMaxWidth()
+                            )
 
-                        Text(
-                            "Bis",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Slider(
-                            value         = effectiveTo.toFloat(),
-                            onValueChange = { v ->
-                                val newTo = v.roundToInt().coerceIn(fromGame, gameCount)
-                                viewModel.setGameRange(fromGame, newTo)
-                            },
-                            valueRange    = 1f..gameCount.toFloat(),
-                            steps         = (gameCount - 2).coerceAtLeast(0),
-                            modifier      = Modifier.fillMaxWidth()
-                        )
+                            Text(
+                                "Bis",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Slider(
+                                value         = effectiveTo.toFloat(),
+                                onValueChange = { v ->
+                                    val newTo = v.roundToInt().coerceIn(fromGame, gameCount)
+                                    viewModel.setGameRange(fromGame, newTo)
+                                },
+                                valueRange    = 1f..gameCount.toFloat(),
+                                steps         = (gameCount - 2).coerceAtLeast(0),
+                                modifier      = Modifier.fillMaxWidth()
+                            )
+                        }
                     }
                 }
             }

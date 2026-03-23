@@ -4,14 +4,18 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dartsapp.data.db.dao.TrainingDao
+import com.dartsapp.data.db.dao.TrainingThrowDao
 import com.dartsapp.data.db.entity.PlayerEntity
 import com.dartsapp.data.db.entity.TrainingSessionEntity
+import com.dartsapp.data.db.entity.TrainingThrowEntity
 import com.dartsapp.data.model.ScoreMultiplier
 import com.dartsapp.domain.model.DartInput
 import com.dartsapp.domain.model.TrainingDifficulty
 import com.dartsapp.domain.model.TrainingMode
 import com.dartsapp.domain.model.generateTargetFields
 import com.dartsapp.domain.model.requiresDouble
+import com.dartsapp.domain.model.targetCenterForAtcNumber
+import com.dartsapp.domain.model.targetCenterForZielfeldField
 import com.dartsapp.domain.usecase.player.GetPlayersUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -81,7 +85,8 @@ sealed class ModeState {
 class TrainingViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     getPlayersUseCase: GetPlayersUseCase,
-    private val trainingDao: TrainingDao
+    private val trainingDao: TrainingDao,
+    private val trainingThrowDao: TrainingThrowDao
 ) : ViewModel() {
 
     private val modeArg: String = savedStateHandle["mode"] ?: TrainingMode.ZIELFELD.name
@@ -130,7 +135,24 @@ class TrainingViewModel @Inject constructor(
     // ── Zielfeld ──────────────────────────────────────────────────────────────
 
     fun recordZielfeldDart(dart: DartInput) {
-        recordZielfeldThrow(dart, dart.toZielfeldField())
+        val thrownField = dart.toZielfeldField()
+        val state = (_uiState.value as? TrainingUiState.Running)?.modeState as? ModeState.Zielfeld
+        if (state != null && dart.tapX != null && dart.tapY != null) {
+            val (tx, ty) = targetCenterForZielfeldField(state.currentField)
+            viewModelScope.launch {
+                trainingThrowDao.insert(
+                    TrainingThrowEntity(
+                        playerId  = playerIdArg,
+                        targetNx  = tx,
+                        targetNy  = ty,
+                        actualNx  = dart.tapX,
+                        actualNy  = dart.tapY,
+                        thrownAt  = System.currentTimeMillis()
+                    )
+                )
+            }
+        }
+        recordZielfeldThrow(dart, thrownField)
     }
 
     fun undoZielfeldThrow() {
@@ -184,6 +206,21 @@ class TrainingViewModel @Inject constructor(
     fun recordAtcDart(dart: DartInput) {
         val state = (_uiState.value as? TrainingUiState.Running)?.modeState as? ModeState.AroundTheClock
             ?: return
+        if (dart.tapX != null && dart.tapY != null) {
+            val (tx, ty) = targetCenterForAtcNumber(state.currentNumber, state.requiresDoubleForCurrent)
+            viewModelScope.launch {
+                trainingThrowDao.insert(
+                    TrainingThrowEntity(
+                        playerId  = playerIdArg,
+                        targetNx  = tx,
+                        targetNy  = ty,
+                        actualNx  = dart.tapX,
+                        actualNy  = dart.tapY,
+                        thrownAt  = System.currentTimeMillis()
+                    )
+                )
+            }
+        }
         val isHit = dart.field == state.currentNumber &&
             (!state.requiresDoubleForCurrent || dart.multiplier == ScoreMultiplier.DOUBLE)
         recordAtcThrow(dart, isHit)
