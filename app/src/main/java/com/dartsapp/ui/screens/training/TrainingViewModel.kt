@@ -91,7 +91,7 @@ class TrainingViewModel @Inject constructor(
 
     private val modeArg: String = savedStateHandle["mode"] ?: TrainingMode.ZIELFELD.name
     private val difficultyArg: String = savedStateHandle["difficulty"] ?: TrainingDifficulty.BEGINNER.name
-    private val playerIdArg: Long = savedStateHandle["playerId"] ?: 0L
+    val playerIdArg: Long = savedStateHandle["playerId"] ?: 0L
 
     val mode: TrainingMode = runCatching { TrainingMode.valueOf(modeArg) }.getOrDefault(TrainingMode.ZIELFELD)
     val difficulty: TrainingDifficulty = runCatching { TrainingDifficulty.valueOf(difficultyArg) }.getOrDefault(TrainingDifficulty.BEGINNER)
@@ -139,14 +139,15 @@ class TrainingViewModel @Inject constructor(
         val state = (_uiState.value as? TrainingUiState.Running)?.modeState as? ModeState.Zielfeld
         if (state != null && dart.tapX != null && dart.tapY != null) {
             val (tx, ty) = targetCenterForZielfeldField(state.currentField)
+            val isHit = thrownField == state.currentField
             viewModelScope.launch {
                 trainingThrowDao.insert(
                     TrainingThrowEntity(
                         playerId  = playerIdArg,
                         targetNx  = tx,
                         targetNy  = ty,
-                        actualNx  = dart.tapX,
-                        actualNy  = dart.tapY,
+                        actualNx  = if (isHit) tx else dart.tapX,
+                        actualNy  = if (isHit) ty else dart.tapY,
                         thrownAt  = System.currentTimeMillis()
                     )
                 )
@@ -206,6 +207,8 @@ class TrainingViewModel @Inject constructor(
     fun recordAtcDart(dart: DartInput) {
         val state = (_uiState.value as? TrainingUiState.Running)?.modeState as? ModeState.AroundTheClock
             ?: return
+        val isHit = dart.field == state.currentNumber &&
+            (!state.requiresDoubleForCurrent || dart.multiplier == ScoreMultiplier.DOUBLE)
         if (dart.tapX != null && dart.tapY != null) {
             val (tx, ty) = targetCenterForAtcNumber(state.currentNumber, state.requiresDoubleForCurrent)
             viewModelScope.launch {
@@ -214,15 +217,13 @@ class TrainingViewModel @Inject constructor(
                         playerId  = playerIdArg,
                         targetNx  = tx,
                         targetNy  = ty,
-                        actualNx  = dart.tapX,
-                        actualNy  = dart.tapY,
+                        actualNx  = if (isHit) tx else dart.tapX,
+                        actualNy  = if (isHit) ty else dart.tapY,
                         thrownAt  = System.currentTimeMillis()
                     )
                 )
             }
         }
-        val isHit = dart.field == state.currentNumber &&
-            (!state.requiresDoubleForCurrent || dart.multiplier == ScoreMultiplier.DOUBLE)
         recordAtcThrow(dart, isHit)
     }
 

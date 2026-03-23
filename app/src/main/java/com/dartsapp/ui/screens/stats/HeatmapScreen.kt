@@ -54,6 +54,7 @@ import kotlin.math.roundToInt
 @Composable
 fun HeatmapScreen(
     onBack: () -> Unit,
+    initialShowDispersion: Boolean = false,
     viewModel: HeatmapViewModel = hiltViewModel()
 ) {
     val playerName              by viewModel.playerName.collectAsState()
@@ -70,7 +71,7 @@ fun HeatmapScreen(
     val toTraining              by viewModel.toTraining.collectAsState()
 
     var playerDialogOpen by remember { mutableStateOf(false) }
-    var showHeatmap      by remember { mutableStateOf(true) }
+    var showHeatmap      by remember { mutableStateOf(!initialShowDispersion) }
 
     // Clamp displayed "to" values against the actual counts
     val effectiveTo         = if (toGame == Int.MAX_VALUE) gameCount else toGame.coerceAtMost(gameCount)

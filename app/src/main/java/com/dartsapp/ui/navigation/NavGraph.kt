@@ -83,7 +83,12 @@ fun DartsNavGraph(navController: NavHostController) {
             val viewModel: TrainingViewModel = hiltViewModel()
             TrainingScreen(
                 viewModel = viewModel,
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                onStreuungClick = {
+                    navController.navigate(
+                        Screen.Heatmap.createRoute(viewModel.playerIdArg, showDispersion = true)
+                    )
+                }
             )
         }
 
@@ -113,9 +118,16 @@ fun DartsNavGraph(navController: NavHostController) {
 
         composable(
             route     = Screen.Heatmap.route,
-            arguments = listOf(navArgument("playerId") { type = NavType.LongType })
-        ) {
-            HeatmapScreen(onBack = { navController.popBackStack() })
+            arguments = listOf(
+                navArgument("playerId") { type = NavType.LongType },
+                navArgument("showDispersion") { type = NavType.BoolType; defaultValue = false }
+            )
+        ) { backStackEntry ->
+            val showDispersion = backStackEntry.arguments?.getBoolean("showDispersion") ?: false
+            HeatmapScreen(
+                onBack               = { navController.popBackStack() },
+                initialShowDispersion = showDispersion
+            )
         }
     }
 }

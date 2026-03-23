@@ -50,7 +50,8 @@ private val CARD_CORNER = RoundedCornerShape(12.dp)
 @Composable
 fun TrainingScreen(
     viewModel: TrainingViewModel,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onStreuungClick: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -75,6 +76,13 @@ fun TrainingScreen(
                         style = MaterialTheme.typography.titleLarge
                     )
                     Spacer(Modifier.weight(1f))
+                    Button(
+                        onClick = onStreuungClick,
+                        shape = RoundedCornerShape(50),
+                        modifier = Modifier.padding(end = 8.dp)
+                    ) {
+                        Text("Streuung")
+                    }
                     Text(
                         viewModel.difficulty.displayName(),
                         style = MaterialTheme.typography.bodyMedium,
