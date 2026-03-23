@@ -36,6 +36,7 @@ import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -61,7 +62,7 @@ private val ACTION_BTN_H: Dp = 56.dp
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun GameSetupScreen(viewModel: GameSetupViewModel, onBack: () -> Unit) {
+fun GameSetupScreen(viewModel: GameSetupViewModel, onBack: () -> Unit, onTraining: () -> Unit = {}) {
     val players by viewModel.players.collectAsState()
     val selectedIds by viewModel.selectedPlayerIds.collectAsState()
     val startingScore by viewModel.startingScore.collectAsState()
@@ -95,6 +96,10 @@ fun GameSetupScreen(viewModel: GameSetupViewModel, onBack: () -> Unit) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
                     }
                     Text("Neues Spiel", style = MaterialTheme.typography.titleLarge)
+                    Spacer(Modifier.weight(1f))
+                    TextButton(onClick = onTraining) {
+                        Text("Training")
+                    }
                 }
             }
         }

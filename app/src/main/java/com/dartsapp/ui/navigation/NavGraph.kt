@@ -18,6 +18,10 @@ import com.dartsapp.ui.screens.setup.GameSetupScreen
 import com.dartsapp.ui.screens.setup.GameSetupViewModel
 import com.dartsapp.ui.screens.stats.HeatmapScreen
 import com.dartsapp.ui.screens.stats.StatsScreen
+import com.dartsapp.ui.screens.training.TrainingScreen
+import com.dartsapp.ui.screens.training.TrainingSetupScreen
+import com.dartsapp.ui.screens.training.TrainingSetupViewModel
+import com.dartsapp.ui.screens.training.TrainingViewModel
 
 @Composable
 fun DartsNavGraph(navController: NavHostController) {
@@ -48,7 +52,39 @@ fun DartsNavGraph(navController: NavHostController) {
                 }
             }
 
-            GameSetupScreen(viewModel = viewModel, onBack = { navController.popBackStack() })
+            GameSetupScreen(
+                viewModel = viewModel,
+                onBack = { navController.popBackStack() },
+                onTraining = { navController.navigate(Screen.TrainingSetup.route) }
+            )
+        }
+
+        composable(Screen.TrainingSetup.route) {
+            val viewModel: TrainingSetupViewModel = hiltViewModel()
+            TrainingSetupScreen(
+                viewModel = viewModel,
+                onBack = { navController.popBackStack() },
+                onStartTraining = { mode, difficulty, playerId ->
+                    navController.navigate(
+                        Screen.Training.createRoute(mode.name, difficulty.name, playerId)
+                    )
+                }
+            )
+        }
+
+        composable(
+            route = Screen.Training.route,
+            arguments = listOf(
+                navArgument("mode") { type = NavType.StringType },
+                navArgument("difficulty") { type = NavType.StringType },
+                navArgument("playerId") { type = NavType.LongType }
+            )
+        ) {
+            val viewModel: TrainingViewModel = hiltViewModel()
+            TrainingScreen(
+                viewModel = viewModel,
+                onBack = { navController.popBackStack() }
+            )
         }
 
         composable(
