@@ -56,21 +56,25 @@ fun HeatmapScreen(
     onBack: () -> Unit,
     viewModel: HeatmapViewModel = hiltViewModel()
 ) {
-    val playerName          by viewModel.playerName.collectAsState()
-    val allPlayers          by viewModel.allPlayers.collectAsState()
-    val selectedId          by viewModel.selectedPlayerId.collectAsState()
-    val hitPositions        by viewModel.hitPositions.collectAsState()
-    val gameCount           by viewModel.gameCount.collectAsState()
-    val fromGame            by viewModel.fromGame.collectAsState()
-    val toGame              by viewModel.toGame.collectAsState()
-    val dispersion          by viewModel.dispersion.collectAsState()
-    val trainingThrowCount  by viewModel.trainingThrowCount.collectAsState()
+    val playerName              by viewModel.playerName.collectAsState()
+    val allPlayers              by viewModel.allPlayers.collectAsState()
+    val selectedId              by viewModel.selectedPlayerId.collectAsState()
+    val hitPositions            by viewModel.hitPositions.collectAsState()
+    val gameCount               by viewModel.gameCount.collectAsState()
+    val fromGame                by viewModel.fromGame.collectAsState()
+    val toGame                  by viewModel.toGame.collectAsState()
+    val dispersion              by viewModel.dispersion.collectAsState()
+    val trainingThrowCount      by viewModel.trainingThrowCount.collectAsState()
+    val trainingSessionCount    by viewModel.trainingSessionCount.collectAsState()
+    val fromTraining            by viewModel.fromTraining.collectAsState()
+    val toTraining              by viewModel.toTraining.collectAsState()
 
     var playerDialogOpen by remember { mutableStateOf(false) }
     var showHeatmap      by remember { mutableStateOf(true) }
 
-    // Clamp displayed "to" value against the actual game count
-    val effectiveTo = if (toGame == Int.MAX_VALUE) gameCount else toGame.coerceAtMost(gameCount)
+    // Clamp displayed "to" values against the actual counts
+    val effectiveTo         = if (toGame == Int.MAX_VALUE) gameCount else toGame.coerceAtMost(gameCount)
+    val effectiveTrainingTo = if (toTraining == Int.MAX_VALUE) trainingSessionCount else toTraining.coerceAtMost(trainingSessionCount)
 
     Scaffold(
         topBar = {
@@ -148,6 +152,64 @@ fun HeatmapScreen(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+
+                    HorizontalDivider()
+
+                    Text(
+                        "Trainingsbereich",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    when {
+                        trainingSessionCount == 0 -> Text(
+                            "Noch keine Trainings.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        trainingSessionCount == 1 -> Text(
+                            "Training 1 von 1",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        else -> {
+                            Text(
+                                text  = "Training $fromTraining – $effectiveTrainingTo von $trainingSessionCount",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+
+                            Text(
+                                "Von",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Slider(
+                                value         = fromTraining.toFloat(),
+                                onValueChange = { v ->
+                                    val newFrom = v.roundToInt().coerceIn(1, effectiveTrainingTo)
+                                    viewModel.setTrainingRange(newFrom, toTraining)
+                                },
+                                valueRange    = 1f..trainingSessionCount.toFloat(),
+                                steps         = (trainingSessionCount - 2).coerceAtLeast(0),
+                                modifier      = Modifier.fillMaxWidth()
+                            )
+
+                            Text(
+                                "Bis",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Slider(
+                                value         = effectiveTrainingTo.toFloat(),
+                                onValueChange = { v ->
+                                    val newTo = v.roundToInt().coerceIn(fromTraining, trainingSessionCount)
+                                    viewModel.setTrainingRange(fromTraining, newTo)
+                                },
+                                valueRange    = 1f..trainingSessionCount.toFloat(),
+                                steps         = (trainingSessionCount - 2).coerceAtLeast(0),
+                                modifier      = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
                 }
 
                 if (showHeatmap) {

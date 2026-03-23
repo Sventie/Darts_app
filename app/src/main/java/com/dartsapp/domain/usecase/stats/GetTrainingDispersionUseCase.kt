@@ -21,11 +21,19 @@ class GetTrainingDispersionUseCase @Inject constructor(
      * Only throws recorded via the dartboard (with known tap positions) are
      * counted; all Zielfeld and Around-the-Clock sessions contribute.
      */
-    operator fun invoke(playerId: Long): Flow<Float> =
-        trainingThrowDao.getForPlayer(playerId).map { throws ->
-            if (throws.isEmpty()) 0f
+    operator fun invoke(playerId: Long, fromSession: Int = 1, toSession: Int = Int.MAX_VALUE): Flow<Float> {
+        val throws = if (fromSession == 1 && toSession == Int.MAX_VALUE)
+            trainingThrowDao.getForPlayer(playerId)
+        else
+            trainingThrowDao.getForPlayerInSessionRange(
+                playerId,
+                fromOffset = fromSession - 2,
+                toOffset   = toSession - 1
+            )
+        return throws.map { list ->
+            if (list.isEmpty()) 0f
             else {
-                val meanSqDist = throws.map { t ->
+                val meanSqDist = list.map { t ->
                     val dx = t.actualNx - t.targetNx
                     val dy = t.actualNy - t.targetNy
                     dx * dx + dy * dy
@@ -33,7 +41,15 @@ class GetTrainingDispersionUseCase @Inject constructor(
                 (sqrt(meanSqDist) / R_DOUBLE_OUT).coerceIn(0f, 1f)
             }
         }
+    }
 
-    fun throwCount(playerId: Long): Flow<Int> =
-        trainingThrowDao.getCountForPlayer(playerId)
+    fun throwCount(playerId: Long, fromSession: Int = 1, toSession: Int = Int.MAX_VALUE): Flow<Int> =
+        if (fromSession == 1 && toSession == Int.MAX_VALUE)
+            trainingThrowDao.getCountForPlayer(playerId)
+        else
+            trainingThrowDao.getCountForPlayerInSessionRange(
+                playerId,
+                fromOffset = fromSession - 2,
+                toOffset   = toSession - 1
+            )
 }

@@ -31,4 +31,7 @@ interface TrainingDao {
         mode: String,
         limit: Int = 5
     ): Flow<List<TrainingSessionEntity>>
+
+    @Query("SELECT COUNT(*) FROM training_sessions WHERE player_id = :playerId")
+    fun getCountForPlayer(playerId: Long): Flow<Int>
 }
