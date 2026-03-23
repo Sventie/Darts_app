@@ -26,15 +26,23 @@ private fun polarToNorm(r: Float, number: Int): Pair<Float, Float> {
  * the geometric centre of a Zielfeld target string such as "S20", "D5", "T17",
  * "Bull" or "Bullseye".  Returns (0, 0) for unrecognised / miss entries.
  */
-fun targetCenterForZielfeldField(fieldStr: String): Pair<Float, Float> = when {
-    fieldStr == "Bullseye" || fieldStr == "Bull" -> 0f to 0f
-    fieldStr.startsWith("S") ->
-        polarToNorm((R_BULL + R_TRIPLE_IN) / 2f, fieldStr.substring(1).toIntOrNull() ?: return@targetCenterForZielfeldField 0f to 0f)
-    fieldStr.startsWith("D") ->
-        polarToNorm((R_DOUBLE_IN + R_DOUBLE_OUT) / 2f, fieldStr.substring(1).toIntOrNull() ?: return@targetCenterForZielfeldField 0f to 0f)
-    fieldStr.startsWith("T") ->
-        polarToNorm((R_TRIPLE_IN + R_TRIPLE_OUT) / 2f, fieldStr.substring(1).toIntOrNull() ?: return@targetCenterForZielfeldField 0f to 0f)
-    else -> 0f to 0f
+fun targetCenterForZielfeldField(fieldStr: String): Pair<Float, Float> {
+    return when {
+        fieldStr == "Bullseye" || fieldStr == "Bull" -> 0f to 0f
+        fieldStr.startsWith("S") -> {
+            val n = fieldStr.substring(1).toIntOrNull() ?: return 0f to 0f
+            polarToNorm((R_BULL + R_TRIPLE_IN) / 2f, n)
+        }
+        fieldStr.startsWith("D") -> {
+            val n = fieldStr.substring(1).toIntOrNull() ?: return 0f to 0f
+            polarToNorm((R_DOUBLE_IN + R_DOUBLE_OUT) / 2f, n)
+        }
+        fieldStr.startsWith("T") -> {
+            val n = fieldStr.substring(1).toIntOrNull() ?: return 0f to 0f
+            polarToNorm((R_TRIPLE_IN + R_TRIPLE_OUT) / 2f, n)
+        }
+        else -> 0f to 0f
+    }
 }
 
 /**
