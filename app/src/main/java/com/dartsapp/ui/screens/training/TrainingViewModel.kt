@@ -44,7 +44,8 @@ sealed class ModeState {
         val targetFields: List<String>,
         val currentFieldIndex: Int,
         val throwsForCurrentField: List<String>,
-        val completedFields: List<Pair<String, Int>> // field to dart count
+        val completedFields: List<Pair<String, Int>>, // field to dart count
+        val throwDartsForCurrentField: List<DartInput> = emptyList()
     ) : ModeState() {
         val currentField: String get() = targetFields[currentFieldIndex]
         val totalDartsSoFar: Int get() = completedFields.sumOf { it.second } + throwsForCurrentField.size
@@ -55,7 +56,8 @@ sealed class ModeState {
         val dartsOnCurrentNumber: Int,
         val totalDarts: Int,
         val completedNumbers: List<Int>,
-        val difficulty: TrainingDifficulty
+        val difficulty: TrainingDifficulty,
+        val lastDart: DartInput? = null
     ) : ModeState() {
         val requiresDoubleForCurrent: Boolean
             get() = requiresDouble(currentNumber, difficulty)
@@ -128,7 +130,7 @@ class TrainingViewModel @Inject constructor(
     // ── Zielfeld ──────────────────────────────────────────────────────────────
 
     fun recordZielfeldDart(dart: DartInput) {
-        recordZielfeldThrow(dart.toZielfeldField())
+        recordZielfeldThrow(dart, dart.toZielfeldField())
     }
 
     fun undoZielfeldThrow() {
@@ -136,14 +138,18 @@ class TrainingViewModel @Inject constructor(
             ?: return
         if (state.throwsForCurrentField.isEmpty()) return
         _uiState.value = TrainingUiState.Running(
-            state.copy(throwsForCurrentField = state.throwsForCurrentField.dropLast(1))
+            state.copy(
+                throwsForCurrentField = state.throwsForCurrentField.dropLast(1),
+                throwDartsForCurrentField = state.throwDartsForCurrentField.dropLast(1)
+            )
         )
     }
 
-    private fun recordZielfeldThrow(thrownField: String) {
+    private fun recordZielfeldThrow(dart: DartInput, thrownField: String) {
         val state = (_uiState.value as? TrainingUiState.Running)?.modeState as? ModeState.Zielfeld
             ?: return
         val newThrows = state.throwsForCurrentField + thrownField
+        val newDarts = state.throwDartsForCurrentField + dart
         if (thrownField == state.currentField) {
             val newCompleted = state.completedFields + Pair(state.currentField, newThrows.size)
             val nextIndex = state.currentFieldIndex + 1
@@ -154,13 +160,17 @@ class TrainingViewModel @Inject constructor(
                     state.copy(
                         currentFieldIndex = nextIndex,
                         throwsForCurrentField = emptyList(),
+                        throwDartsForCurrentField = emptyList(),
                         completedFields = newCompleted
                     )
                 )
             }
         } else {
             _uiState.value = TrainingUiState.Running(
-                state.copy(throwsForCurrentField = newThrows)
+                state.copy(
+                    throwsForCurrentField = newThrows,
+                    throwDartsForCurrentField = newDarts
+                )
             )
         }
     }
@@ -176,10 +186,10 @@ class TrainingViewModel @Inject constructor(
             ?: return
         val isHit = dart.field == state.currentNumber &&
             (!state.requiresDoubleForCurrent || dart.multiplier == ScoreMultiplier.DOUBLE)
-        recordAtcThrow(isHit)
+        recordAtcThrow(dart, isHit)
     }
 
-    private fun recordAtcThrow(isHit: Boolean) {
+    private fun recordAtcThrow(dart: DartInput, isHit: Boolean) {
         val state = (_uiState.value as? TrainingUiState.Running)?.modeState as? ModeState.AroundTheClock
             ?: return
         val newTotal = state.totalDarts + 1
@@ -194,7 +204,8 @@ class TrainingViewModel @Inject constructor(
                         currentNumber = nextNumber,
                         dartsOnCurrentNumber = 0,
                         totalDarts = newTotal,
-                        completedNumbers = newCompleted
+                        completedNumbers = newCompleted,
+                        lastDart = dart
                     )
                 )
             }
@@ -202,7 +213,8 @@ class TrainingViewModel @Inject constructor(
             _uiState.value = TrainingUiState.Running(
                 state.copy(
                     dartsOnCurrentNumber = state.dartsOnCurrentNumber + 1,
-                    totalDarts = newTotal
+                    totalDarts = newTotal,
+                    lastDart = dart
                 )
             )
         }

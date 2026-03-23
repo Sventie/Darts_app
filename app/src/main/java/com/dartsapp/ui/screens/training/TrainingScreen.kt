@@ -145,10 +145,12 @@ private fun ZielfeldContent(
 ) {
     val progress = "${state.currentFieldIndex + 1} / ${state.targetFields.size}"
 
+    val lastDartAsList = listOfNotNull(state.throwDartsForCurrentField.lastOrNull())
+
     if (isLandscape) {
         Row(modifier = Modifier.fillMaxSize()) {
             ScoreInputKeypad(
-                currentRoundDarts = emptyList(),
+                currentRoundDarts = lastDartAsList,
                 onDartEntered = onDartEntered,
                 onUndo = onUndo,
                 canUndo = canUndo,
@@ -179,7 +181,7 @@ private fun ZielfeldContent(
                 ZielfeldInfoPanel(state = state, progress = progress)
             }
             ScoreInputKeypad(
-                currentRoundDarts = emptyList(),
+                currentRoundDarts = lastDartAsList,
                 onDartEntered = onDartEntered,
                 onUndo = onUndo,
                 canUndo = canUndo,
@@ -246,10 +248,12 @@ private fun AroundTheClockContent(
     isLandscape: Boolean,
     onDartEntered: (DartInput) -> Unit
 ) {
+    val lastDartAsList = listOfNotNull(state.lastDart)
+
     if (isLandscape) {
         Row(modifier = Modifier.fillMaxSize()) {
             ScoreInputKeypad(
-                currentRoundDarts = emptyList(),
+                currentRoundDarts = lastDartAsList,
                 onDartEntered = onDartEntered,
                 onUndo = {},
                 canUndo = false,
@@ -284,7 +288,7 @@ private fun AroundTheClockContent(
                 AtcProgressGrid(state = state)
             }
             ScoreInputKeypad(
-                currentRoundDarts = emptyList(),
+                currentRoundDarts = lastDartAsList,
                 onDartEntered = onDartEntered,
                 onUndo = {},
                 canUndo = false,
