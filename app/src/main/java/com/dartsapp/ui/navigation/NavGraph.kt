@@ -68,6 +68,9 @@ fun DartsNavGraph(navController: NavHostController) {
                     navController.navigate(
                         Screen.Training.createRoute(mode.name, difficulty.name, playerId)
                     )
+                },
+                onStreuungClick = { playerId ->
+                    navController.navigate(Screen.Heatmap.createRoute(playerId, showDispersion = true))
                 }
             )
         }
@@ -83,12 +86,7 @@ fun DartsNavGraph(navController: NavHostController) {
             val viewModel: TrainingViewModel = hiltViewModel()
             TrainingScreen(
                 viewModel = viewModel,
-                onBack = { navController.popBackStack() },
-                onStreuungClick = {
-                    navController.navigate(
-                        Screen.Heatmap.createRoute(viewModel.playerIdArg, showDispersion = true)
-                    )
-                }
+                onBack = { navController.popBackStack() }
             )
         }
 

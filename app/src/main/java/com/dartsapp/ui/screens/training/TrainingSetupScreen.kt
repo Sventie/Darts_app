@@ -57,7 +57,8 @@ private val ACTION_BTN_H = 56.dp
 fun TrainingSetupScreen(
     viewModel: TrainingSetupViewModel,
     onBack: () -> Unit,
-    onStartTraining: (mode: TrainingMode, difficulty: TrainingDifficulty, playerId: Long) -> Unit
+    onStartTraining: (mode: TrainingMode, difficulty: TrainingDifficulty, playerId: Long) -> Unit,
+    onStreuungClick: (playerId: Long) -> Unit = {}
 ) {
     val players by viewModel.players.collectAsState()
     val selectedPlayerId by viewModel.selectedPlayerId.collectAsState()
@@ -93,6 +94,14 @@ fun TrainingSetupScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
                     }
                     Text("Training", style = MaterialTheme.typography.titleLarge)
+                    Spacer(Modifier.weight(1f))
+                    Button(
+                        onClick = { onStreuungClick(selectedPlayerId ?: 0L) },
+                        shape = RoundedCornerShape(50),
+                        modifier = Modifier.padding(end = 8.dp)
+                    ) {
+                        Text("Streuung")
+                    }
                 }
             }
         }
