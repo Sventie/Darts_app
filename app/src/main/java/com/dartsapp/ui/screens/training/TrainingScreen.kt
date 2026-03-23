@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -26,7 +25,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -34,7 +32,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -43,9 +41,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import com.dartsapp.domain.model.TrainingDifficulty
+import com.dartsapp.domain.model.DartInput
 import com.dartsapp.domain.model.TrainingMode
+import com.dartsapp.ui.screens.game.components.ScoreInputKeypad
 
 private val CARD_CORNER = RoundedCornerShape(12.dp)
 
@@ -104,22 +102,21 @@ fun TrainingScreen(
                         when (val modeState = state.modeState) {
                             is ModeState.Zielfeld -> ZielfeldContent(
                                 state = modeState,
-                                difficulty = viewModel.difficulty,
                                 isLandscape = isLandscape,
-                                onThrow = { viewModel.recordZielfeldThrow(it) }
+                                onDartEntered = { viewModel.recordZielfeldDart(it) },
+                                canUndo = modeState.throwsForCurrentField.isNotEmpty(),
+                                onUndo = { viewModel.undoZielfeldThrow() }
                             )
                             is ModeState.AroundTheClock -> AroundTheClockContent(
                                 state = modeState,
                                 isLandscape = isLandscape,
-                                onHit = { viewModel.recordAtcThrow(true) },
-                                onMiss = { viewModel.recordAtcThrow(false) }
+                                onDartEntered = { viewModel.recordAtcDart(it) }
                             )
                             is ModeState.ScoringRounds -> ScoringRoundsContent(
                                 state = modeState,
                                 isLandscape = isLandscape,
-                                onAppendDigit = { viewModel.scoringAppendDigit(it) },
-                                onDelete = { viewModel.scoringDeleteDigit() },
-                                onConfirm = { viewModel.scoringConfirmRound() }
+                                onDartEntered = { viewModel.recordScoringDart(it) },
+                                onUndo = { viewModel.undoScoringDart() }
                             )
                         }
                     }
@@ -138,57 +135,67 @@ fun TrainingScreen(
 
 // ── Zielfeld ─────────────────────────────────────────────────────────────────
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ZielfeldContent(
     state: ModeState.Zielfeld,
-    difficulty: TrainingDifficulty,
     isLandscape: Boolean,
-    onThrow: (String) -> Unit
+    onDartEntered: (DartInput) -> Unit,
+    canUndo: Boolean,
+    onUndo: () -> Unit
 ) {
-    val fieldButtons = buildFieldButtons(difficulty)
     val progress = "${state.currentFieldIndex + 1} / ${state.targetFields.size}"
 
     if (isLandscape) {
-        Row(
-            modifier = Modifier.fillMaxSize().padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Left: target + throws history
+        Row(modifier = Modifier.fillMaxSize()) {
+            ScoreInputKeypad(
+                currentRoundDarts = emptyList(),
+                onDartEntered = onDartEntered,
+                onUndo = onUndo,
+                canUndo = canUndo,
+                modifier = Modifier.fillMaxHeight().weight(0.58f)
+            )
+            VerticalDivider(modifier = Modifier.fillMaxHeight().padding(vertical = 8.dp))
             Column(
-                modifier = Modifier.weight(0.55f).fillMaxHeight(),
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .weight(0.42f)
+                    .padding(16.dp)
+                    .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                ZielfeldTargetPanel(state = state, progress = progress)
-            }
-            // Right: field buttons
-            Column(
-                modifier = Modifier.weight(0.45f).fillMaxHeight().verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text("Getroffenes Feld eingeben", style = MaterialTheme.typography.labelLarge)
-                Spacer(Modifier.height(4.dp))
-                FieldButtonGrid(fieldButtons = fieldButtons, onThrow = onThrow)
+                ZielfeldInfoPanel(state = state, progress = progress)
             }
         }
     } else {
-        Column(
-            modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            ZielfeldTargetPanel(state = state, progress = progress)
-            Spacer(Modifier.height(16.dp))
-            Text("Getroffenes Feld eingeben", style = MaterialTheme.typography.labelLarge)
-            Spacer(Modifier.height(8.dp))
-            FieldButtonGrid(fieldButtons = fieldButtons, onThrow = onThrow)
+        Column(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(0.4f)
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                ZielfeldInfoPanel(state = state, progress = progress)
+            }
+            ScoreInputKeypad(
+                currentRoundDarts = emptyList(),
+                onDartEntered = onDartEntered,
+                onUndo = onUndo,
+                canUndo = canUndo,
+                modifier = Modifier.fillMaxWidth().weight(0.6f)
+            )
         }
     }
 }
 
 @Composable
-private fun ZielfeldTargetPanel(state: ModeState.Zielfeld, progress: String) {
-    Text(progress, style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+private fun ZielfeldInfoPanel(state: ModeState.Zielfeld, progress: String) {
+    Text(
+        progress,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+    )
     Spacer(Modifier.height(8.dp))
     Card(
         modifier = Modifier.size(160.dp),
@@ -197,8 +204,11 @@ private fun ZielfeldTargetPanel(state: ModeState.Zielfeld, progress: String) {
     ) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Zielfeld", style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f))
+                Text(
+                    "Zielfeld",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                )
                 Spacer(Modifier.height(4.dp))
                 Text(
                     text = state.currentField,
@@ -220,42 +230,12 @@ private fun ZielfeldTargetPanel(state: ModeState.Zielfeld, progress: String) {
     }
     if (state.completedFields.isNotEmpty()) {
         Spacer(Modifier.height(12.dp))
-        Text("Gesamt: ${state.totalDartsSoFar} Darts",
+        Text(
+            "Gesamt: ${state.totalDartsSoFar} Darts",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+        )
     }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun FieldButtonGrid(fieldButtons: List<String>, onThrow: (String) -> Unit) {
-    FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        fieldButtons.forEach { field ->
-            FilledTonalButton(
-                onClick = { onThrow(field) },
-                shape = CARD_CORNER,
-                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
-            ) {
-                Text(field, style = MaterialTheme.typography.labelLarge)
-            }
-        }
-    }
-}
-
-private fun buildFieldButtons(difficulty: TrainingDifficulty): List<String> = buildList {
-    for (i in 1..20) add("S$i")
-    add("Bull")
-    if (difficulty != TrainingDifficulty.BEGINNER) {
-        for (i in 1..20) add("D$i")
-    }
-    if (difficulty == TrainingDifficulty.PRO) {
-        for (i in 1..20) add("T$i")
-        add("Bullseye")
-    }
-    add("Miss")
 }
 
 // ── Around the Clock ─────────────────────────────────────────────────────────
@@ -264,47 +244,52 @@ private fun buildFieldButtons(difficulty: TrainingDifficulty): List<String> = bu
 private fun AroundTheClockContent(
     state: ModeState.AroundTheClock,
     isLandscape: Boolean,
-    onHit: () -> Unit,
-    onMiss: () -> Unit
+    onDartEntered: (DartInput) -> Unit
 ) {
     if (isLandscape) {
-        Row(
-            modifier = Modifier.fillMaxSize().padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
+        Row(modifier = Modifier.fillMaxSize()) {
+            ScoreInputKeypad(
+                currentRoundDarts = emptyList(),
+                onDartEntered = onDartEntered,
+                onUndo = {},
+                canUndo = false,
+                modifier = Modifier.fillMaxHeight().weight(0.58f)
+            )
+            VerticalDivider(modifier = Modifier.fillMaxHeight().padding(vertical = 8.dp))
             Column(
-                modifier = Modifier.weight(0.55f).fillMaxHeight(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .weight(0.42f)
+                    .padding(16.dp)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 AtcTargetPanel(state = state)
-                Spacer(Modifier.height(24.dp))
-                AtcButtons(
-                    requiresDouble = state.requiresDoubleForCurrent,
-                    onHit = onHit,
-                    onMiss = onMiss
-                )
-            }
-            Column(
-                modifier = Modifier.weight(0.45f).fillMaxHeight()
-            ) {
+                Spacer(Modifier.height(16.dp))
                 AtcProgressGrid(state = state)
             }
         }
     } else {
-        Column(
-            modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            AtcTargetPanel(state = state)
-            Spacer(Modifier.height(24.dp))
-            AtcButtons(
-                requiresDouble = state.requiresDoubleForCurrent,
-                onHit = onHit,
-                onMiss = onMiss
+        Column(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(0.4f)
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                AtcTargetPanel(state = state)
+                Spacer(Modifier.height(12.dp))
+                AtcProgressGrid(state = state)
+            }
+            ScoreInputKeypad(
+                currentRoundDarts = emptyList(),
+                onDartEntered = onDartEntered,
+                onUndo = {},
+                canUndo = false,
+                modifier = Modifier.fillMaxWidth().weight(0.6f)
             )
-            Spacer(Modifier.height(24.dp))
-            AtcProgressGrid(state = state)
         }
     }
 }
@@ -325,9 +310,12 @@ private fun AtcTargetPanel(state: ModeState.AroundTheClock) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 val label = if (state.requiresDoubleForCurrent) "Treffe D${state.currentNumber}" else "Treffe ${state.currentNumber}"
-                Text(label, style = MaterialTheme.typography.labelMedium,
+                Text(
+                    label,
+                    style = MaterialTheme.typography.labelMedium,
                     textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f))
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                )
                 Spacer(Modifier.height(4.dp))
                 Text(
                     text = "${state.currentNumber}",
@@ -351,27 +339,6 @@ private fun AtcTargetPanel(state: ModeState.AroundTheClock) {
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
     )
-}
-
-@Composable
-private fun AtcButtons(requiresDouble: Boolean, onHit: () -> Unit, onMiss: () -> Unit) {
-    val hitLabel = if (requiresDouble) "Double getroffen" else "Getroffen"
-    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-        Button(
-            onClick = onHit,
-            modifier = Modifier.weight(1f).height(56.dp),
-            shape = CARD_CORNER
-        ) {
-            Text(hitLabel, style = MaterialTheme.typography.titleMedium)
-        }
-        OutlinedButton(
-            onClick = onMiss,
-            modifier = Modifier.weight(1f).height(56.dp),
-            shape = CARD_CORNER
-        ) {
-            Text("Verfehlt", style = MaterialTheme.typography.titleMedium)
-        }
-    }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -415,47 +382,48 @@ private fun AtcProgressGrid(state: ModeState.AroundTheClock) {
 private fun ScoringRoundsContent(
     state: ModeState.ScoringRounds,
     isLandscape: Boolean,
-    onAppendDigit: (String) -> Unit,
-    onDelete: () -> Unit,
-    onConfirm: () -> Unit
+    onDartEntered: (DartInput) -> Unit,
+    onUndo: () -> Unit
 ) {
     if (isLandscape) {
-        Row(
-            modifier = Modifier.fillMaxSize().padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
+        Row(modifier = Modifier.fillMaxSize()) {
+            ScoreInputKeypad(
+                currentRoundDarts = state.pendingDarts,
+                onDartEntered = onDartEntered,
+                onUndo = onUndo,
+                canUndo = state.pendingDarts.isNotEmpty(),
+                modifier = Modifier.fillMaxHeight().weight(0.58f)
+            )
+            VerticalDivider(modifier = Modifier.fillMaxHeight().padding(vertical = 8.dp))
             Column(
-                modifier = Modifier.weight(0.5f).fillMaxHeight(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .weight(0.42f)
+                    .padding(16.dp)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 ScoringInfoPanel(state = state)
             }
-            Column(
-                modifier = Modifier.weight(0.5f).fillMaxHeight(),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                ScoringKeypad(
-                    state = state,
-                    onAppendDigit = onAppendDigit,
-                    onDelete = onDelete,
-                    onConfirm = onConfirm
-                )
-            }
         }
     } else {
-        Column(
-            modifier = Modifier.fillMaxSize().padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            ScoringInfoPanel(state = state)
-            Spacer(Modifier.height(24.dp))
-            ScoringKeypad(
-                state = state,
-                onAppendDigit = onAppendDigit,
-                onDelete = onDelete,
-                onConfirm = onConfirm
+        Column(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(0.4f)
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                ScoringInfoPanel(state = state)
+            }
+            ScoreInputKeypad(
+                currentRoundDarts = state.pendingDarts,
+                onDartEntered = onDartEntered,
+                onUndo = onUndo,
+                canUndo = state.pendingDarts.isNotEmpty(),
+                modifier = Modifier.fillMaxWidth().weight(0.6f)
             )
         }
     }
@@ -478,8 +446,11 @@ private fun ScoringInfoPanel(state: ModeState.ScoringRounds) {
             modifier = Modifier.padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("Dein Ø", style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f))
+            Text(
+                "Dein Ø",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+            )
             Text(
                 text = if (state.roundScores.isEmpty()) "–"
                        else String.format("%.1f", state.runningAverage),
@@ -494,6 +465,34 @@ private fun ScoringInfoPanel(state: ModeState.ScoringRounds) {
             )
         }
     }
+    if (state.pendingDarts.isNotEmpty()) {
+        Spacer(Modifier.height(12.dp))
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = CARD_CORNER,
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "${state.pendingDarts.size} / 3 Darts",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
+                )
+                Text(
+                    "${state.pendingScore} Punkte",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            }
+        }
+    }
     if (state.roundScores.isNotEmpty()) {
         Spacer(Modifier.height(12.dp))
         Text("Letzte Runden:", style = MaterialTheme.typography.labelMedium)
@@ -503,67 +502,6 @@ private fun ScoringInfoPanel(state: ModeState.ScoringRounds) {
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center
         )
-    }
-}
-
-@Composable
-private fun ScoringKeypad(
-    state: ModeState.ScoringRounds,
-    onAppendDigit: (String) -> Unit,
-    onDelete: () -> Unit,
-    onConfirm: () -> Unit
-) {
-    Card(
-        shape = CARD_CORNER,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = if (state.pendingInput.isEmpty()) "0" else state.pendingInput,
-                style = MaterialTheme.typography.displayMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 12.dp)
-            )
-            val rows = listOf(
-                listOf("1", "2", "3"),
-                listOf("4", "5", "6"),
-                listOf("7", "8", "9"),
-                listOf("⌫", "0", "✓")
-            )
-            rows.forEach { row ->
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.padding(bottom = 8.dp)
-                ) {
-                    row.forEach { key ->
-                        when (key) {
-                            "⌫" -> FilledTonalButton(
-                                onClick = onDelete,
-                                modifier = Modifier.size(64.dp),
-                                shape = CARD_CORNER,
-                                contentPadding = PaddingValues(0.dp)
-                            ) { Text(key, style = MaterialTheme.typography.titleLarge) }
-                            "✓" -> Button(
-                                onClick = onConfirm,
-                                enabled = state.pendingInput.isNotEmpty(),
-                                modifier = Modifier.size(64.dp),
-                                shape = CARD_CORNER,
-                                contentPadding = PaddingValues(0.dp)
-                            ) { Text(key, style = MaterialTheme.typography.titleLarge) }
-                            else -> OutlinedButton(
-                                onClick = { onAppendDigit(key) },
-                                modifier = Modifier.size(64.dp),
-                                shape = CARD_CORNER,
-                                contentPadding = PaddingValues(0.dp)
-                            ) { Text(key, style = MaterialTheme.typography.titleLarge) }
-                        }
-                    }
-                }
-            }
-        }
     }
 }
 
@@ -587,11 +525,17 @@ private fun FinishedDialog(
                 modifier = Modifier.padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("Training beendet!", style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold)
+                Text(
+                    "Training beendet!",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
                 Spacer(Modifier.height(8.dp))
-                Text(result.playerName, style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+                Text(
+                    result.playerName,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                )
                 Spacer(Modifier.height(16.dp))
                 Text(
                     text = when (result.mode) {

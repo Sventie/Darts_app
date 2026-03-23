@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.dartsapp.data.db.dao.TrainingDao
 import com.dartsapp.data.db.entity.PlayerEntity
 import com.dartsapp.data.db.entity.TrainingSessionEntity
+import com.dartsapp.data.model.ScoreMultiplier
+import com.dartsapp.domain.model.DartInput
 import com.dartsapp.domain.model.TrainingDifficulty
 import com.dartsapp.domain.model.TrainingMode
 import com.dartsapp.domain.model.generateTargetFields
@@ -31,7 +33,7 @@ data class TrainingResult(
     val mode: TrainingMode,
     val difficulty: TrainingDifficulty,
     val playerName: String,
-    /** Total darts (Zielfeld/AtC) or average score (Scoring Rounds) */
+    /** Total darts (Zielfeld/AtC) or average score ×10 (Scoring Rounds) */
     val primaryResult: Int,
     /** Completed fields / rounds */
     val fieldsCompleted: Int
@@ -62,13 +64,14 @@ sealed class ModeState {
     data class ScoringRounds(
         val currentRound: Int,
         val roundScores: List<Int>,
-        val pendingInput: String,
+        val pendingDarts: List<DartInput>,
         val targetAverage: Int
     ) : ModeState() {
         val totalRounds: Int get() = 10
         val runningAverage: Double
             get() = if (roundScores.isEmpty()) 0.0 else roundScores.average()
         val isFinished: Boolean get() = roundScores.size >= totalRounds
+        val pendingScore: Int get() = pendingDarts.sumOf { it.scoreValue }
     }
 }
 
@@ -115,24 +118,36 @@ class TrainingViewModel @Inject constructor(
                 TrainingMode.SCORING_ROUNDS -> ModeState.ScoringRounds(
                     currentRound = 1,
                     roundScores = emptyList(),
-                    pendingInput = "",
+                    pendingDarts = emptyList(),
                     targetAverage = difficulty.targetAverage()
                 )
             }
         )
     }
 
-    /** Zielfeld: record a thrown field (e.g. "T20", "S5", "Bull") */
-    fun recordZielfeldThrow(thrownField: String) {
+    // ── Zielfeld ──────────────────────────────────────────────────────────────
+
+    fun recordZielfeldDart(dart: DartInput) {
+        recordZielfeldThrow(dart.toZielfeldField())
+    }
+
+    fun undoZielfeldThrow() {
+        val state = (_uiState.value as? TrainingUiState.Running)?.modeState as? ModeState.Zielfeld
+            ?: return
+        if (state.throwsForCurrentField.isEmpty()) return
+        _uiState.value = TrainingUiState.Running(
+            state.copy(throwsForCurrentField = state.throwsForCurrentField.dropLast(1))
+        )
+    }
+
+    private fun recordZielfeldThrow(thrownField: String) {
         val state = (_uiState.value as? TrainingUiState.Running)?.modeState as? ModeState.Zielfeld
             ?: return
         val newThrows = state.throwsForCurrentField + thrownField
         if (thrownField == state.currentField) {
-            // Hit! Move to next field
             val newCompleted = state.completedFields + Pair(state.currentField, newThrows.size)
             val nextIndex = state.currentFieldIndex + 1
             if (nextIndex >= state.targetFields.size) {
-                // All fields completed
                 finishZielfeld(newCompleted)
             } else {
                 _uiState.value = TrainingUiState.Running(
@@ -151,16 +166,23 @@ class TrainingViewModel @Inject constructor(
     }
 
     private fun finishZielfeld(completedFields: List<Pair<String, Int>>) {
-        val totalDarts = completedFields.sumOf { it.second }
-        saveAndFinish(totalDarts, completedFields.size)
+        saveAndFinish(completedFields.sumOf { it.second }, completedFields.size)
     }
 
-    /** Around the Clock: record whether the dart was a hit */
-    fun recordAtcThrow(isHit: Boolean) {
+    // ── Around the Clock ──────────────────────────────────────────────────────
+
+    fun recordAtcDart(dart: DartInput) {
+        val state = (_uiState.value as? TrainingUiState.Running)?.modeState as? ModeState.AroundTheClock
+            ?: return
+        val isHit = dart.field == state.currentNumber &&
+            (!state.requiresDoubleForCurrent || dart.multiplier == ScoreMultiplier.DOUBLE)
+        recordAtcThrow(isHit)
+    }
+
+    private fun recordAtcThrow(isHit: Boolean) {
         val state = (_uiState.value as? TrainingUiState.Running)?.modeState as? ModeState.AroundTheClock
             ?: return
         val newTotal = state.totalDarts + 1
-        val newDartsOnCurrent = state.dartsOnCurrentNumber + 1
         if (isHit) {
             val newCompleted = state.completedNumbers + state.currentNumber
             val nextNumber = state.currentNumber + 1
@@ -179,50 +201,49 @@ class TrainingViewModel @Inject constructor(
         } else {
             _uiState.value = TrainingUiState.Running(
                 state.copy(
-                    dartsOnCurrentNumber = newDartsOnCurrent,
+                    dartsOnCurrentNumber = state.dartsOnCurrentNumber + 1,
                     totalDarts = newTotal
                 )
             )
         }
     }
 
-    /** Scoring Rounds: update the pending input digit */
-    fun scoringAppendDigit(digit: String) {
+    // ── Scoring Rounds ────────────────────────────────────────────────────────
+
+    fun recordScoringDart(dart: DartInput) {
         val state = (_uiState.value as? TrainingUiState.Running)?.modeState as? ModeState.ScoringRounds
             ?: return
         if (state.isFinished) return
-        val newInput = (state.pendingInput + digit).trimStart('0').ifEmpty { "0" }
-        val value = newInput.toIntOrNull() ?: return
-        if (value > 180) return
-        _uiState.value = TrainingUiState.Running(state.copy(pendingInput = newInput))
-    }
-
-    fun scoringDeleteDigit() {
-        val state = (_uiState.value as? TrainingUiState.Running)?.modeState as? ModeState.ScoringRounds
-            ?: return
-        val newInput = state.pendingInput.dropLast(1)
-        _uiState.value = TrainingUiState.Running(state.copy(pendingInput = newInput))
-    }
-
-    fun scoringConfirmRound() {
-        val state = (_uiState.value as? TrainingUiState.Running)?.modeState as? ModeState.ScoringRounds
-            ?: return
-        if (state.isFinished) return
-        val score = state.pendingInput.toIntOrNull() ?: 0
-        val newScores = state.roundScores + score
-        if (newScores.size >= state.totalRounds) {
-            val avg = (newScores.average() * 10).toInt()
-            saveAndFinish(avg, newScores.size)
-        } else {
-            _uiState.value = TrainingUiState.Running(
-                state.copy(
-                    currentRound = state.currentRound + 1,
-                    roundScores = newScores,
-                    pendingInput = ""
+        val newPendingDarts = state.pendingDarts + dart
+        if (newPendingDarts.size >= 3) {
+            val score = newPendingDarts.sumOf { it.scoreValue }
+            val newScores = state.roundScores + score
+            if (newScores.size >= state.totalRounds) {
+                saveAndFinish((newScores.average() * 10).toInt(), newScores.size)
+            } else {
+                _uiState.value = TrainingUiState.Running(
+                    state.copy(
+                        currentRound = state.currentRound + 1,
+                        roundScores = newScores,
+                        pendingDarts = emptyList()
+                    )
                 )
-            )
+            }
+        } else {
+            _uiState.value = TrainingUiState.Running(state.copy(pendingDarts = newPendingDarts))
         }
     }
+
+    fun undoScoringDart() {
+        val state = (_uiState.value as? TrainingUiState.Running)?.modeState as? ModeState.ScoringRounds
+            ?: return
+        if (state.pendingDarts.isEmpty()) return
+        _uiState.value = TrainingUiState.Running(
+            state.copy(pendingDarts = state.pendingDarts.dropLast(1))
+        )
+    }
+
+    // ── Common ────────────────────────────────────────────────────────────────
 
     private fun saveAndFinish(result: Int, fieldsCompleted: Int) {
         viewModelScope.launch {
@@ -252,4 +273,14 @@ class TrainingViewModel @Inject constructor(
     fun restart() {
         startSession()
     }
+}
+
+private fun DartInput.toZielfeldField(): String = when {
+    field == 0 -> "Miss"
+    field == 50 -> "Bullseye"
+    field == 25 -> "Bull"
+    multiplier == ScoreMultiplier.SINGLE -> "S$field"
+    multiplier == ScoreMultiplier.DOUBLE -> "D$field"
+    multiplier == ScoreMultiplier.TRIPLE -> "T$field"
+    else -> "Miss"
 }
