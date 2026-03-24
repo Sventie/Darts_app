@@ -2,6 +2,7 @@ package com.dartsapp.ui.screens.setup
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -61,7 +62,7 @@ private val ACTION_BTN_H: Dp = 56.dp
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun GameSetupScreen(viewModel: GameSetupViewModel, onBack: () -> Unit) {
+fun GameSetupScreen(viewModel: GameSetupViewModel, onBack: () -> Unit, onTraining: () -> Unit = {}) {
     val players by viewModel.players.collectAsState()
     val selectedIds by viewModel.selectedPlayerIds.collectAsState()
     val startingScore by viewModel.startingScore.collectAsState()
@@ -109,21 +110,49 @@ fun GameSetupScreen(viewModel: GameSetupViewModel, onBack: () -> Unit) {
             Text("Spieler", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(8.dp))
 
-            LazyRow(
-                state = lazyListState,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(selectedPlayers, key = { it.id }) { player ->
-                    ReorderableItem(reorderState, key = player.id) { _ ->
-                        PlayerCard(
-                            player = player,
-                            stats = playerStats[player.id],
-                            modifier = Modifier.draggableHandle()
-                        )
+            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                val trainingBtnW = 160f
+                val rowGap       = 8f   // gap between LazyRow and Training button
+                val cardSpacing  = 8f   // gap between cards inside LazyRow
+                val normalSize   = 144f
+                val itemCount    = selectedPlayers.size + 1  // player cards + add-button
+
+                val availForCards = maxWidth.value - trainingBtnW - rowGap
+                val neededWidth   = itemCount * normalSize + (itemCount - 1) * cardSpacing
+                val cardSizeDp    = if (neededWidth <= availForCards) normalSize.dp
+                                    else ((availForCards - (itemCount - 1) * cardSpacing) / itemCount)
+                                        .coerceAtLeast(48f).dp
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(rowGap.dp),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    LazyRow(
+                        state = lazyListState,
+                        horizontalArrangement = Arrangement.spacedBy(cardSpacing.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        items(selectedPlayers, key = { it.id }) { player ->
+                            ReorderableItem(reorderState, key = player.id) { _ ->
+                                PlayerCard(
+                                    player = player,
+                                    stats = playerStats[player.id],
+                                    size = cardSizeDp,
+                                    modifier = Modifier.draggableHandle()
+                                )
+                            }
+                        }
+                        item(key = "add_button") {
+                            AddPlayerCard(onClick = { showPlayerDialog = true }, size = cardSizeDp)
+                        }
                     }
-                }
-                item(key = "add_button") {
-                    AddPlayerCard(onClick = { showPlayerDialog = true })
+                    Button(
+                        onClick = onTraining,
+                        modifier = Modifier.size(width = trainingBtnW.dp, height = cardSizeDp),
+                        shape = CARD_CORNER
+                    ) {
+                        Text("Training", style = MaterialTheme.typography.titleMedium)
+                    }
                 }
             }
 
@@ -197,6 +226,7 @@ fun GameSetupScreen(viewModel: GameSetupViewModel, onBack: () -> Unit) {
 private fun PlayerCard(
     player: PlayerEntity,
     stats: PlayerStats?,
+    size: Dp = 144.dp,
     modifier: Modifier = Modifier
 ) {
     // Pick one random stat label per player; only re-pick when stats first becomes available,
@@ -205,7 +235,7 @@ private fun PlayerCard(
     val statLabel = remember(player.id, hasStats) { if (hasStats) randomStatLabel(stats) else null }
 
     Card(
-        modifier = modifier.size(144.dp),
+        modifier = modifier.size(size),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer
         )
@@ -254,10 +284,10 @@ private fun randomStatLabel(stats: PlayerStats?): String? {
 }
 
 @Composable
-private fun AddPlayerCard(onClick: () -> Unit) {
+private fun AddPlayerCard(onClick: () -> Unit, size: Dp = 144.dp) {
     OutlinedCard(
         onClick = onClick,
-        modifier = Modifier.size(144.dp)
+        modifier = Modifier.size(size)
     ) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Icon(Icons.Default.Add, contentDescription = "Spieler hinzufügen")

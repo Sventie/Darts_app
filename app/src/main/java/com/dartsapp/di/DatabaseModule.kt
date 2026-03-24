@@ -8,6 +8,8 @@ import com.dartsapp.data.db.dao.GameDao
 import com.dartsapp.data.db.dao.GameParticipantDao
 import com.dartsapp.data.db.dao.PlayerDao
 import com.dartsapp.data.db.dao.RoundDao
+import com.dartsapp.data.db.dao.TrainingDao
+import com.dartsapp.data.db.dao.TrainingThrowDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -40,4 +42,10 @@ object DatabaseModule {
 
     @Provides
     fun provideDartThrowDao(db: AppDatabase): DartThrowDao = db.dartThrowDao()
+
+    @Provides
+    fun provideTrainingDao(db: AppDatabase): TrainingDao = db.trainingDao()
+
+    @Provides
+    fun provideTrainingThrowDao(db: AppDatabase): TrainingThrowDao = db.trainingThrowDao()
 }

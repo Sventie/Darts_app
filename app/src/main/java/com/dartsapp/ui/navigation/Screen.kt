@@ -8,7 +8,13 @@ sealed class Screen(val route: String) {
         fun createRoute(gameId: Long) = "game/$gameId"
     }
     object Stats : Screen("stats")
-    object Heatmap : Screen("heatmap/{playerId}") {
-        fun createRoute(playerId: Long) = "heatmap/$playerId"
+    object Heatmap : Screen("heatmap/{playerId}/{showDispersion}") {
+        fun createRoute(playerId: Long, showDispersion: Boolean = false) =
+            "heatmap/$playerId/$showDispersion"
+    }
+    object TrainingSetup : Screen("training_setup")
+    object Training : Screen("training/{mode}/{difficulty}/{playerId}") {
+        fun createRoute(mode: String, difficulty: String, playerId: Long) =
+            "training/$mode/$difficulty/$playerId"
     }
 }
