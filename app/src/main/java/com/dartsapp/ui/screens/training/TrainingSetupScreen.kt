@@ -115,37 +115,77 @@ fun TrainingSetupScreen(
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            // Player selection via popup
-            Text("Spieler", style = MaterialTheme.typography.headlineMedium)
-            Spacer(Modifier.height(4.dp))
-            if (players.isEmpty()) {
-                Text(
-                    "Keine Spieler vorhanden",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                )
-            } else {
-                val selectedPlayer = players.find { it.id == selectedPlayerId }
-                Card(
-                    onClick = { showPlayerDialog = true },
-                    modifier = Modifier.size(144.dp),
-                    shape = CARD_CORNER,
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (selectedPlayer != null)
-                            MaterialTheme.colorScheme.primaryContainer
-                        else
-                            MaterialTheme.colorScheme.surfaceVariant
-                    )
-                ) {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            // Top row: Player selection (left) + Recent results (right)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.Top
+            ) {
+                // Left: Spieler
+                Column {
+                    Text("Spieler", style = MaterialTheme.typography.headlineMedium)
+                    Spacer(Modifier.height(4.dp))
+                    if (players.isEmpty()) {
                         Text(
-                            text = selectedPlayer?.name ?: "?",
-                            style = MaterialTheme.typography.titleLarge,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(horizontal = 8.dp)
+                            "Keine Spieler vorhanden",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                         )
+                    } else {
+                        val selectedPlayer = players.find { it.id == selectedPlayerId }
+                        Card(
+                            onClick = { showPlayerDialog = true },
+                            modifier = Modifier.size(144.dp),
+                            shape = CARD_CORNER,
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (selectedPlayer != null)
+                                    MaterialTheme.colorScheme.primaryContainer
+                                else
+                                    MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        ) {
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = selectedPlayer?.name ?: "?",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(horizontal = 8.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Right: Letzte Ergebnisse
+                if (recentSessions.isNotEmpty()) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Letzte Ergebnisse", style = MaterialTheme.typography.headlineMedium)
+                        Spacer(Modifier.height(4.dp))
+                        val firstRow = recentSessions.take(5)
+                        val secondRow = recentSessions.drop(5).take(5)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            firstRow.forEach { session ->
+                                RecentResultCard(session = session, modifier = Modifier.weight(1f))
+                            }
+                            repeat(5 - firstRow.size) { Spacer(Modifier.weight(1f)) }
+                        }
+                        if (secondRow.isNotEmpty()) {
+                            Spacer(Modifier.height(6.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                secondRow.forEach { session ->
+                                    RecentResultCard(session = session, modifier = Modifier.weight(1f))
+                                }
+                                repeat(5 - secondRow.size) { Spacer(Modifier.weight(1f)) }
+                            }
+                        }
                     }
                 }
             }
@@ -182,36 +222,6 @@ fun TrainingSetupScreen(
                         onClick = { viewModel.selectDifficulty(difficulty) },
                         modifier = Modifier.weight(1f)
                     )
-                }
-            }
-
-            // Recent results – last 10 as a 2×5 compact grid
-            if (recentSessions.isNotEmpty()) {
-                Spacer(Modifier.height(12.dp))
-                Text("Letzte Ergebnisse", style = MaterialTheme.typography.headlineMedium)
-                Spacer(Modifier.height(4.dp))
-                val firstRow = recentSessions.take(5)
-                val secondRow = recentSessions.drop(5).take(5)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    firstRow.forEach { session ->
-                        RecentResultCard(session = session, modifier = Modifier.weight(1f))
-                    }
-                    repeat(5 - firstRow.size) { Spacer(Modifier.weight(1f)) }
-                }
-                if (secondRow.isNotEmpty()) {
-                    Spacer(Modifier.height(6.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        secondRow.forEach { session ->
-                            RecentResultCard(session = session, modifier = Modifier.weight(1f))
-                        }
-                        repeat(5 - secondRow.size) { Spacer(Modifier.weight(1f)) }
-                    }
                 }
             }
 
