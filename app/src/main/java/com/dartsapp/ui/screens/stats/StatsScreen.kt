@@ -20,6 +20,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -29,6 +30,7 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -50,6 +52,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.dartsapp.domain.model.PlayerStats
 import java.util.Locale
+
+private enum class SortOrder { BY_NAME, BY_VALUE }
 
 private val STAT_CARD_SIZE = 120.dp
 private val STAT_CARD_CORNER = RoundedCornerShape(12.dp)
@@ -94,11 +98,17 @@ fun StatsScreen(
     val allStats by viewModel.allStats.collectAsState()
 
     var compareDialogOpen by remember { mutableStateOf(false) }
+    var sortDialogOpen by remember { mutableStateOf(false) }
+    var sortOrder by remember { mutableStateOf(SortOrder.BY_NAME) }
     var filterIds by remember { mutableStateOf<Set<Long>?>(null) }
 
-    val displayedStats = remember(allStats, filterIds) {
+    val displayedStats = remember(allStats, filterIds, sortOrder) {
         val ids = filterIds
-        if (ids != null) allStats.filter { it.playerId in ids } else allStats
+        val filtered = if (ids != null) allStats.filter { it.playerId in ids } else allStats
+        when (sortOrder) {
+            SortOrder.BY_NAME  -> filtered.sortedBy { it.playerName.lowercase() }
+            SortOrder.BY_VALUE -> filtered.sortedByDescending { it.wins }
+        }
     }
 
     Scaffold(
@@ -131,6 +141,7 @@ fun StatsScreen(
                 filterIds        = filterIds,
                 hasEnoughPlayers = allStats.size >= 2,
                 hasPlayers       = allStats.isNotEmpty(),
+                onSortClick      = { sortDialogOpen = true },
                 onCompareClick   = { compareDialogOpen = true },
                 onHeatmapClick   = { allStats.firstOrNull()?.let { s -> onHeatmapClick(s.playerId) } },
                 onClearFilter    = { filterIds = null }
@@ -168,6 +179,17 @@ fun StatsScreen(
             )
         }
 
+        if (sortDialogOpen) {
+            SortOrderDialog(
+                current   = sortOrder,
+                onDismiss = { sortDialogOpen = false },
+                onConfirm = { order ->
+                    sortOrder = order
+                    sortDialogOpen = false
+                }
+            )
+        }
+
     }
 }
 
@@ -181,6 +203,7 @@ private fun StatsActionBar(
     filterIds:        Set<Long>?,
     hasEnoughPlayers: Boolean,
     hasPlayers:       Boolean,
+    onSortClick:      () -> Unit,
     onCompareClick:   () -> Unit,
     onHeatmapClick:   () -> Unit,
     onClearFilter:    () -> Unit
@@ -192,6 +215,10 @@ private fun StatsActionBar(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        Button(onClick = onSortClick) {
+            Text("Sortieren")
+        }
+
         Button(
             onClick = onCompareClick,
             enabled = hasEnoughPlayers
@@ -221,6 +248,51 @@ private fun StatsActionBar(
             )
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// Sort dialog
+// ---------------------------------------------------------------------------
+
+@Composable
+private fun SortOrderDialog(
+    current:   SortOrder,
+    onDismiss: () -> Unit,
+    onConfirm: (SortOrder) -> Unit
+) {
+    var selected by remember { mutableStateOf(current) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Sortieren") },
+        text = {
+            Column {
+                listOf(
+                    SortOrder.BY_NAME  to "Nach Name",
+                    SortOrder.BY_VALUE to "Nach höchstem Wert (Siege)"
+                ).forEach { (order, label) ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = selected == order,
+                            onClick  = { selected = order }
+                        )
+                        Text(label, modifier = Modifier.padding(start = 8.dp))
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(selected) }) { Text("OK") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Abbrechen") }
+        }
+    )
 }
 
 // ---------------------------------------------------------------------------
