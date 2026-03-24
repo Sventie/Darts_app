@@ -44,10 +44,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.dartsapp.domain.model.PlayerStats
@@ -422,26 +426,63 @@ private fun StatCard(name: String, value: String) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text(
-                text      = name,
-                style     = MaterialTheme.typography.labelMedium,
-                textAlign = TextAlign.Center,
-                maxLines  = 2,
-                overflow  = TextOverflow.Ellipsis,
-                color     = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+            AutoSizeText(
+                text        = name,
+                maxFontSize = 18.sp,
+                minFontSize = 10.sp,
+                textAlign   = TextAlign.Center,
+                color       = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                modifier    = Modifier.fillMaxWidth()
             )
             Spacer(Modifier.height(6.dp))
-            Text(
-                text       = value,
-                style      = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                textAlign  = TextAlign.Center,
-                maxLines   = 2,
-                overflow   = TextOverflow.Ellipsis,
-                color      = MaterialTheme.colorScheme.onPrimaryContainer
+            AutoSizeText(
+                text        = value,
+                maxFontSize = 48.sp,
+                minFontSize = 16.sp,
+                fontWeight  = FontWeight.Bold,
+                textAlign   = TextAlign.Center,
+                color       = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier    = Modifier.fillMaxWidth()
             )
         }
     }
+}
+
+@Composable
+private fun AutoSizeText(
+    text:        String,
+    maxFontSize: TextUnit,
+    minFontSize: TextUnit,
+    modifier:    Modifier = Modifier,
+    fontWeight:  FontWeight? = null,
+    textAlign:   TextAlign? = null,
+    color:       Color = Color.Unspecified,
+) {
+    var fontSize   by remember(text) { mutableStateOf(maxFontSize) }
+    var readyToDraw by remember(text) { mutableStateOf(false) }
+
+    Text(
+        text       = text,
+        fontSize   = fontSize,
+        fontWeight = fontWeight,
+        textAlign  = textAlign,
+        color      = color,
+        maxLines   = 1,
+        softWrap   = false,
+        overflow   = TextOverflow.Visible,
+        modifier   = modifier.drawWithContent {
+            if (readyToDraw) drawContent()
+        },
+        onTextLayout = { result ->
+            if (result.didOverflowWidth) {
+                val next = fontSize * 0.85f
+                fontSize = if (next >= minFontSize) next else minFontSize
+                if (next < minFontSize) readyToDraw = true
+            } else {
+                readyToDraw = true
+            }
+        }
+    )
 }
 
 // ---------------------------------------------------------------------------
