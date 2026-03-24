@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -219,22 +220,30 @@ private fun StatsActionBar(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Button(onClick = onSortClick) {
-            Text("Sortieren")
+        Button(
+            onClick = onSortClick,
+            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
+            modifier = Modifier.defaultMinSize(minHeight = 64.dp)
+        ) {
+            Text("Sortieren", fontSize = 28.sp)
         }
 
         Button(
             onClick = onCompareClick,
-            enabled = hasEnoughPlayers
+            enabled = hasEnoughPlayers,
+            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
+            modifier = Modifier.defaultMinSize(minHeight = 64.dp)
         ) {
-            Text("Vergleichen")
+            Text("Vergleichen", fontSize = 28.sp)
         }
 
         Button(
             onClick = onHeatmapClick,
-            enabled = hasPlayers
+            enabled = hasPlayers,
+            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
+            modifier = Modifier.defaultMinSize(minHeight = 64.dp)
         ) {
-            Text("Heatmap")
+            Text("Heatmap", fontSize = 28.sp)
         }
 
         if (filterIds != null) {
@@ -395,7 +404,7 @@ private fun StatCategorySection(
         ) {
             Text(
                 text       = title,
-                style      = MaterialTheme.typography.titleMedium,
+                style      = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.SemiBold
             )
             Text(
