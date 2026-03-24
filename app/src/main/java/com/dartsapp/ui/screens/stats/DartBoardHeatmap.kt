@@ -162,8 +162,8 @@ fun DartBoardHeatmap(
 }
 
 /**
- * Dartboard with a dispersion circle. The circle is centered at the bullseye
- * and has a radius proportional to [dispersion] (0=tiny, 1=double ring edge).
+ * Dartboard with a dispersion circle. The circle is centered at the Triple 20
+ * field centre and has a radius proportional to [dispersion] (0=tiny, 1=double ring edge).
  */
 @Composable
 fun DartBoardDispersion(
@@ -180,13 +180,16 @@ fun DartBoardDispersion(
         drawCircle(color = ColLabelRing, radius = R * R_LABEL_RING_OUT, center = center)
         drawCircle(color = ColBoardBg,   radius = R * R_DOUBLE_OUT,     center = center)
 
+        // Circle centred on Triple 20 (top of board, angle = -90°)
+        val rT20 = (R_TRIPLE_IN + R_TRIPLE_OUT) / 2f
+        val t20Center = Offset(cx, cy - R * rT20)
         val minRadius    = R * 0.02f
         val circleRadius = if (dispersion > 0f)
             minRadius + dispersion * (R_DOUBLE_OUT * R - minRadius)
         else 0f
         if (circleRadius > 0f) {
-            drawCircle(color = Color(0x440088FF), radius = circleRadius, center = center)
-            drawCircle(color = Color(0xCC0088FF), radius = circleRadius, center = center, style = Stroke(4f))
+            drawCircle(color = Color(0x440088FF), radius = circleRadius, center = t20Center)
+            drawCircle(color = Color(0xCC0088FF), radius = circleRadius, center = t20Center, style = Stroke(4f))
         }
 
         drawBoardWiresAndLabels(center, R, textMeasurer)
