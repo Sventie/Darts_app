@@ -212,7 +212,7 @@ fun TrainingSetupScreen(
             Spacer(Modifier.height(12.dp))
 
             // Difficulty selection
-            Text("Einstellungen", style = MaterialTheme.typography.headlineMedium)
+            Text("Level", style = MaterialTheme.typography.headlineMedium)
             Spacer(Modifier.height(4.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 TrainingDifficulty.entries.forEach { difficulty ->
