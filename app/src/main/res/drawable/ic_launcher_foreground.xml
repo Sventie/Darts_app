@@ -4,24 +4,24 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Green outer circle (creates thin outer ring) -->
+    <!-- Green outer circle -->
     <path
         android:fillColor="#1B5E20"
-        android:pathData="M54,6 A48,48 0 1,1 54,102 A48,48 0 1,1 54,6 Z" />
-    <!-- White cutout (leaves thin green border ring) -->
+        android:pathData="M54,14 A40,40 0 1,1 54,94 A40,40 0 1,1 54,14 Z" />
+    <!-- White cutout → thin outer ring (width 3) -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M54,9 A45,45 0 1,1 54,99 A45,45 0 1,1 54,9 Z" />
+        android:pathData="M54,17 A37,37 0 1,1 54,91 A37,37 0 1,1 54,17 Z" />
     <!-- Thick green inner ring -->
     <path
         android:fillColor="#1B5E20"
-        android:pathData="M54,20 A34,34 0 1,1 54,88 A34,34 0 1,1 54,20 Z" />
-    <!-- White center cutout (creates the ring) -->
+        android:pathData="M54,27 A27,27 0 1,1 54,81 A27,27 0 1,1 54,27 Z" />
+    <!-- White cutout → creates thick ring (width 13) -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M54,37 A17,17 0 1,1 54,71 A17,17 0 1,1 54,37 Z" />
+        android:pathData="M54,40 A14,14 0 1,1 54,68 A14,14 0 1,1 54,40 Z" />
     <!-- Red center dot -->
     <path
         android:fillColor="#B71C1C"
-        android:pathData="M54,46 A8,8 0 1,1 54,62 A8,8 0 1,1 54,46 Z" />
+        android:pathData="M54,47 A7,7 0 1,1 54,61 A7,7 0 1,1 54,47 Z" />
 </vector>
