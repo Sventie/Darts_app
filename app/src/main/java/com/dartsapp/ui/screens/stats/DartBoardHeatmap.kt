@@ -183,9 +183,22 @@ fun DartBoardDispersion(
         // Circle centred on Triple 20 (top of board, angle = -90°)
         val rT20 = (R_TRIPLE_IN + R_TRIPLE_OUT) / 2f
         val t20Center = Offset(cx, cy - R * rT20)
-        val minRadius    = R * 0.02f
+        val minRadius = R * 0.02f
+        val maxRadius = R_DOUBLE_OUT * R
+
+        // Guide rings at every 0.1 step
+        for (step in 1..10) {
+            val guideRadius = minRadius + (step / 10f) * (maxRadius - minRadius)
+            drawCircle(
+                color  = Color(0x330088FF),
+                radius = guideRadius,
+                center = t20Center,
+                style  = Stroke(1f)
+            )
+        }
+
         val circleRadius = if (dispersion > 0f)
-            minRadius + dispersion * (R_DOUBLE_OUT * R - minRadius)
+            minRadius + dispersion * (maxRadius - minRadius)
         else 0f
         if (circleRadius > 0f) {
             drawCircle(color = Color(0x440088FF), radius = circleRadius, center = t20Center)
