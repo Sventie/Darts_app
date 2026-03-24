@@ -264,13 +264,12 @@ private fun AroundTheClockContent(
                 modifier = Modifier
                     .fillMaxHeight()
                     .weight(0.42f)
-                    .padding(16.dp)
-                    .verticalScroll(rememberScrollState()),
+                    .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 AtcTargetPanel(state = state)
                 Spacer(Modifier.height(16.dp))
-                AtcProgressGrid(state = state)
+                AtcProgressGrid(state = state, modifier = Modifier.weight(1f))
             }
         }
     } else {
@@ -279,13 +278,12 @@ private fun AroundTheClockContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(0.4f)
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-                    .verticalScroll(rememberScrollState()),
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 AtcTargetPanel(state = state)
                 Spacer(Modifier.height(12.dp))
-                AtcProgressGrid(state = state)
+                AtcProgressGrid(state = state, modifier = Modifier.weight(1f))
             }
             ScoreInputKeypad(
                 currentRoundDarts = lastDartAsList,
@@ -316,7 +314,7 @@ private fun AtcTargetPanel(state: ModeState.AroundTheClock) {
                 val label = if (state.requiresDoubleForCurrent) "Treffe D${state.currentNumber}" else "Treffe ${state.currentNumber}"
                 Text(
                     label,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.titleSmall,
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                 )
@@ -340,40 +338,51 @@ private fun AtcTargetPanel(state: ModeState.AroundTheClock) {
     Spacer(Modifier.height(8.dp))
     Text(
         "Gesamt: ${state.totalDarts} Darts",
-        style = MaterialTheme.typography.titleSmall,
+        style = MaterialTheme.typography.titleMedium,
         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
     )
 }
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun AtcProgressGrid(state: ModeState.AroundTheClock) {
-    Text("Fortschritt", style = MaterialTheme.typography.titleMedium)
-    Spacer(Modifier.height(8.dp))
-    FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        (1..20).forEach { n ->
-            val isDone = n in state.completedNumbers
-            val isCurrent = n == state.currentNumber
-            Card(
-                modifier = Modifier.size(48.dp),
-                shape = RoundedCornerShape(8.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = when {
-                        isDone -> MaterialTheme.colorScheme.primaryContainer
-                        isCurrent -> MaterialTheme.colorScheme.secondaryContainer
-                        else -> MaterialTheme.colorScheme.surfaceVariant
-                    }
-                )
+private fun AtcProgressGrid(state: ModeState.AroundTheClock, modifier: Modifier = Modifier) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text("Fortschritt", style = MaterialTheme.typography.titleMedium)
+        Spacer(Modifier.height(8.dp))
+        // 5 columns × 4 rows = 20; card size fills available space without scrolling
+        BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxWidth()) {
+            val cols = 5
+            val rows = 4
+            val gap = 6.dp
+            val cardSizeByWidth = (maxWidth - gap * (cols - 1)) / cols
+            val cardSizeByHeight = (maxHeight - gap * (rows - 1)) / rows
+            val cardSize = minOf(cardSizeByWidth, cardSizeByHeight)
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(gap),
+                verticalArrangement = Arrangement.spacedBy(gap)
             ) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(
-                        "$n",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal
-                    )
+                (1..20).forEach { n ->
+                    val isDone = n in state.completedNumbers
+                    val isCurrent = n == state.currentNumber
+                    Card(
+                        modifier = Modifier.size(cardSize),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = when {
+                                isDone -> MaterialTheme.colorScheme.primaryContainer
+                                isCurrent -> MaterialTheme.colorScheme.secondaryContainer
+                                else -> MaterialTheme.colorScheme.surfaceVariant
+                            }
+                        )
+                    ) {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text(
+                                "$n",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -464,7 +473,7 @@ private fun ScoringInfoPanel(state: ModeState.ScoringRounds) {
             Spacer(Modifier.height(4.dp))
             Text(
                 "Ziel: ${state.targetAverage}",
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f)
             )
         }
