@@ -31,7 +31,7 @@ fun targetCenterForZielfeldField(fieldStr: String): Pair<Float, Float> {
         fieldStr == "Bullseye" || fieldStr == "Bull" -> 0f to 0f
         fieldStr.startsWith("S") -> {
             val n = fieldStr.substring(1).toIntOrNull() ?: return 0f to 0f
-            polarToNorm((R_BULL + R_TRIPLE_IN) / 2f, n)
+            polarToNorm((R_TRIPLE_OUT + R_DOUBLE_IN) / 2f, n)
         }
         fieldStr.startsWith("D") -> {
             val n = fieldStr.substring(1).toIntOrNull() ?: return 0f to 0f
@@ -52,6 +52,6 @@ fun targetCenterForZielfeldField(fieldStr: String): Pair<Float, Float> {
  */
 fun targetCenterForAtcNumber(number: Int, requiresDouble: Boolean): Pair<Float, Float> {
     val r = if (requiresDouble) (R_DOUBLE_IN + R_DOUBLE_OUT) / 2f
-            else                (R_BULL + R_TRIPLE_IN) / 2f
+            else                (R_TRIPLE_OUT + R_DOUBLE_IN) / 2f
     return polarToNorm(r, number)
 }
