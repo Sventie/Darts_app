@@ -47,6 +47,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.dartsapp.domain.model.DartInput
 import com.dartsapp.ui.screens.game.components.BustDialog
@@ -102,35 +103,35 @@ fun GameScreen(
                 shape = MaterialTheme.shapes.large,
                 tonalElevation = 6.dp
             ) {
-                Column(modifier = Modifier.padding(24.dp)) {
+                Column(modifier = Modifier.padding(32.dp)) {
                     Text(
                         text = "Spiel abbrechen?",
-                        style = MaterialTheme.typography.headlineSmall
+                        style = MaterialTheme.typography.headlineMedium
                     )
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(16.dp))
                     Text(
                         text = "Das laufende Spiel wird beendet und nicht gewertet.",
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.titleMedium
                     )
-                    Spacer(Modifier.height(24.dp))
+                    Spacer(Modifier.height(32.dp))
                     Button(
                         onClick = {
                             showAbandonDialog = false
                             viewModel.abandonGame()
                         },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().height(64.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.error
                         )
                     ) {
-                        Text("Spiel abbrechen")
+                        Text("Spiel abbrechen", fontSize = 24.sp)
                     }
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(12.dp))
                     OutlinedButton(
                         onClick = { showAbandonDialog = false },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().height(64.dp)
                     ) {
-                        Text("Weiterspielen")
+                        Text("Weiterspielen", fontSize = 24.sp)
                     }
                 }
             }
