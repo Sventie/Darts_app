@@ -195,7 +195,7 @@ private fun ZielfeldContent(
 private fun ZielfeldInfoPanel(state: ModeState.Zielfeld, progress: String) {
     Text(
         progress,
-        style = MaterialTheme.typography.labelLarge,
+        style = MaterialTheme.typography.titleMedium,
         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
     )
     Spacer(Modifier.height(8.dp))
@@ -208,7 +208,7 @@ private fun ZielfeldInfoPanel(state: ModeState.Zielfeld, progress: String) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     "Zielfeld",
-                    style = MaterialTheme.typography.labelMedium,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                 )
                 Spacer(Modifier.height(4.dp))
@@ -222,11 +222,11 @@ private fun ZielfeldInfoPanel(state: ModeState.Zielfeld, progress: String) {
     }
     if (state.throwsForCurrentField.isNotEmpty()) {
         Spacer(Modifier.height(12.dp))
-        Text("Bisherige Würfe:", style = MaterialTheme.typography.labelMedium)
+        Text("Bisherige Würfe:", style = MaterialTheme.typography.titleSmall)
         Spacer(Modifier.height(4.dp))
         Text(
             text = state.throwsForCurrentField.joinToString("  "),
-            style = MaterialTheme.typography.bodyLarge,
+            style = MaterialTheme.typography.titleMedium,
             textAlign = TextAlign.Center
         )
     }
@@ -234,7 +234,7 @@ private fun ZielfeldInfoPanel(state: ModeState.Zielfeld, progress: String) {
         Spacer(Modifier.height(12.dp))
         Text(
             "Gesamt: ${state.totalDartsSoFar} Darts",
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
         )
     }
@@ -302,7 +302,7 @@ private fun AroundTheClockContent(
 private fun AtcTargetPanel(state: ModeState.AroundTheClock) {
     Text(
         "${state.completedNumbers.size} / 20",
-        style = MaterialTheme.typography.labelLarge,
+        style = MaterialTheme.typography.titleMedium,
         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
     )
     Spacer(Modifier.height(8.dp))
@@ -316,7 +316,7 @@ private fun AtcTargetPanel(state: ModeState.AroundTheClock) {
                 val label = if (state.requiresDoubleForCurrent) "Treffe D${state.currentNumber}" else "Treffe ${state.currentNumber}"
                 Text(
                     label,
-                    style = MaterialTheme.typography.labelMedium,
+                    style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                 )
@@ -329,7 +329,7 @@ private fun AtcTargetPanel(state: ModeState.AroundTheClock) {
                 if (state.requiresDoubleForCurrent) {
                     Text(
                         "Double!",
-                        style = MaterialTheme.typography.labelSmall,
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error,
                         fontWeight = FontWeight.Bold
                     )
@@ -340,7 +340,7 @@ private fun AtcTargetPanel(state: ModeState.AroundTheClock) {
     Spacer(Modifier.height(8.dp))
     Text(
         "Gesamt: ${state.totalDarts} Darts",
-        style = MaterialTheme.typography.bodyMedium,
+        style = MaterialTheme.typography.titleSmall,
         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
     )
 }
@@ -348,7 +348,7 @@ private fun AtcTargetPanel(state: ModeState.AroundTheClock) {
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun AtcProgressGrid(state: ModeState.AroundTheClock) {
-    Text("Fortschritt", style = MaterialTheme.typography.titleSmall)
+    Text("Fortschritt", style = MaterialTheme.typography.titleMedium)
     Spacer(Modifier.height(8.dp))
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -358,7 +358,7 @@ private fun AtcProgressGrid(state: ModeState.AroundTheClock) {
             val isDone = n in state.completedNumbers
             val isCurrent = n == state.currentNumber
             Card(
-                modifier = Modifier.size(40.dp),
+                modifier = Modifier.size(48.dp),
                 shape = RoundedCornerShape(8.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = when {
@@ -371,7 +371,7 @@ private fun AtcProgressGrid(state: ModeState.AroundTheClock) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
                         "$n",
-                        style = MaterialTheme.typography.labelMedium,
+                        style = MaterialTheme.typography.bodyMedium,
                         fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal
                     )
                 }
@@ -437,7 +437,7 @@ private fun ScoringRoundsContent(
 private fun ScoringInfoPanel(state: ModeState.ScoringRounds) {
     Text(
         "Runde ${state.currentRound} / ${state.totalRounds}",
-        style = MaterialTheme.typography.titleMedium,
+        style = MaterialTheme.typography.titleLarge,
         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
     )
     Spacer(Modifier.height(8.dp))
@@ -452,7 +452,7 @@ private fun ScoringInfoPanel(state: ModeState.ScoringRounds) {
         ) {
             Text(
                 "Dein Ø",
-                style = MaterialTheme.typography.labelMedium,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
             )
             Text(
@@ -464,7 +464,7 @@ private fun ScoringInfoPanel(state: ModeState.ScoringRounds) {
             Spacer(Modifier.height(4.dp))
             Text(
                 "Ziel: ${state.targetAverage}",
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f)
             )
         }
@@ -485,12 +485,12 @@ private fun ScoringInfoPanel(state: ModeState.ScoringRounds) {
             ) {
                 Text(
                     "${state.pendingDarts.size} / 3 Darts",
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
                 )
                 Text(
                     "${state.pendingScore} Punkte",
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSecondaryContainer
                 )
@@ -499,11 +499,11 @@ private fun ScoringInfoPanel(state: ModeState.ScoringRounds) {
     }
     if (state.roundScores.isNotEmpty()) {
         Spacer(Modifier.height(12.dp))
-        Text("Letzte Runden:", style = MaterialTheme.typography.labelMedium)
+        Text("Letzte Runden:", style = MaterialTheme.typography.titleSmall)
         Spacer(Modifier.height(4.dp))
         Text(
             text = state.roundScores.takeLast(5).joinToString("  •  "),
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.titleMedium,
             textAlign = TextAlign.Center
         )
     }
