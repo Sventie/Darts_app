@@ -21,7 +21,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -31,7 +30,6 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -276,37 +274,72 @@ private fun SortOrderDialog(
 ) {
     var selected by remember { mutableStateOf(current) }
 
-    AlertDialog(
+    Dialog(
         onDismissRequest = onDismiss,
-        title = { Text("Sortieren") },
-        text = {
-            Column {
-                listOf(
-                    SortOrder.BY_NAME  to "Nach Name",
-                    SortOrder.BY_VALUE to "Nach höchstem Wert (Siege)"
-                ).forEach { (order, label) ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = selected == order,
-                            onClick  = { selected = order }
-                        )
-                        Text(label, modifier = Modifier.padding(start = 8.dp))
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Surface(
+            shape          = RoundedCornerShape(16.dp),
+            tonalElevation = 6.dp,
+            modifier       = Modifier.fillMaxSize(0.8f)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp)
+            ) {
+                Text("Sortieren", style = MaterialTheme.typography.headlineMedium)
+                Spacer(Modifier.height(16.dp))
+
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(
+                        SortOrder.BY_NAME  to "Nach Name",
+                        SortOrder.BY_VALUE to "Nach höchstem Wert (Siege)"
+                    ).forEach { (order, label) ->
+                        Card(
+                            onClick  = { selected = order },
+                            modifier = Modifier.weight(1f).height(56.dp),
+                            shape    = RoundedCornerShape(12.dp),
+                            colors   = CardDefaults.cardColors(
+                                containerColor = if (selected == order)
+                                    MaterialTheme.colorScheme.primaryContainer
+                                else
+                                    MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        ) {
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text(
+                                    text       = label,
+                                    style      = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = if (selected == order) FontWeight.Bold else FontWeight.Normal,
+                                    textAlign  = TextAlign.Center,
+                                    modifier   = Modifier.padding(horizontal = 8.dp)
+                                )
+                            }
+                        }
                     }
                 }
+
+                Spacer(Modifier.weight(1f))
+
+                Row(
+                    modifier              = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
+                ) {
+                    TextButton(
+                        onClick        = onDismiss,
+                        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
+                        modifier       = Modifier.defaultMinSize(minHeight = 64.dp)
+                    ) { Text("Abbrechen", fontSize = 28.sp) }
+                    Button(
+                        onClick        = { onConfirm(selected) },
+                        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
+                        modifier       = Modifier.defaultMinSize(minHeight = 64.dp)
+                    ) { Text("OK", fontSize = 28.sp) }
+                }
             }
-        },
-        confirmButton = {
-            TextButton(onClick = { onConfirm(selected) }) { Text("OK") }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Abbrechen") }
         }
-    )
+    }
 }
 
 // ---------------------------------------------------------------------------
