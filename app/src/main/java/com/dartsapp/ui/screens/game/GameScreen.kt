@@ -47,6 +47,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.dartsapp.domain.model.DartInput
 import com.dartsapp.ui.screens.game.components.BustDialog
@@ -102,35 +103,35 @@ fun GameScreen(
                 shape = MaterialTheme.shapes.large,
                 tonalElevation = 6.dp
             ) {
-                Column(modifier = Modifier.padding(24.dp)) {
+                Column(modifier = Modifier.padding(32.dp)) {
                     Text(
                         text = "Spiel abbrechen?",
-                        style = MaterialTheme.typography.headlineSmall
+                        style = MaterialTheme.typography.headlineMedium
                     )
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(16.dp))
                     Text(
                         text = "Das laufende Spiel wird beendet und nicht gewertet.",
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.titleMedium
                     )
-                    Spacer(Modifier.height(24.dp))
+                    Spacer(Modifier.height(32.dp))
                     Button(
                         onClick = {
                             showAbandonDialog = false
                             viewModel.abandonGame()
                         },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().height(64.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.error
                         )
                     ) {
-                        Text("Spiel abbrechen")
+                        Text("Spiel abbrechen", fontSize = 24.sp)
                     }
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(12.dp))
                     OutlinedButton(
                         onClick = { showAbandonDialog = false },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().height(64.dp)
                     ) {
-                        Text("Weiterspielen")
+                        Text("Weiterspielen", fontSize = 24.sp)
                     }
                 }
             }
@@ -338,21 +339,21 @@ private fun DartsInfoCard(
         )
     ) {
         Row(
-            modifier = Modifier.padding(12.dp).fillMaxWidth(),
+            modifier = Modifier.padding(16.dp).fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Left: label + dart values
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
                     text = "Würfe",
-                    style = MaterialTheme.typography.labelSmall,
+                    style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 val dartLabels = if (darts.isEmpty()) "–"
                     else darts.joinToString("  –  ") { it.scoreValue.toString() }
                 Text(
                     text = dartLabels,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.SemiBold
                 )
             }
@@ -360,7 +361,7 @@ private fun DartsInfoCard(
             if (darts.isNotEmpty()) {
                 Text(
                     text = "$total",
-                    style = MaterialTheme.typography.headlineMedium,
+                    style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.Bold,
                     color = if (isBust) MaterialTheme.colorScheme.error
                     else MaterialTheme.colorScheme.onSurface
@@ -382,18 +383,18 @@ private fun CheckoutSuggestionCard(
         )
     ) {
         Row(
-            modifier = Modifier.padding(12.dp).fillMaxWidth(),
+            modifier = Modifier.padding(16.dp).fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
                     text = "Checkout",
-                    style = MaterialTheme.typography.labelSmall,
+                    style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
                 )
                 Text(
                     text = if (suggestion != null) suggestion.joinToString("  –  ") else "–",
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSecondaryContainer
                 )

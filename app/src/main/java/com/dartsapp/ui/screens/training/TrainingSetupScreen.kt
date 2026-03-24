@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -41,6 +42,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.dartsapp.data.db.entity.TrainingSessionEntity
 import com.dartsapp.domain.model.TrainingDifficulty
 import com.dartsapp.domain.model.TrainingMode
@@ -49,8 +51,8 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-private val CARD_CORNER = RoundedCornerShape(12.dp)
-private val ACTION_BTN_H = 56.dp
+private val CARD_CORNER = RoundedCornerShape(8.dp)
+private val ACTION_BTN_H = 64.dp
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -100,7 +102,7 @@ fun TrainingSetupScreen(
                         shape = RoundedCornerShape(50),
                         modifier = Modifier.padding(end = 8.dp)
                     ) {
-                        Text("Streuung")
+                        Text("Streuung", style = MaterialTheme.typography.titleMedium)
                     }
                 }
             }
@@ -113,46 +115,86 @@ fun TrainingSetupScreen(
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            // Player selection via popup
-            Text("Spieler", style = MaterialTheme.typography.titleMedium)
-            Spacer(Modifier.height(8.dp))
-            if (players.isEmpty()) {
-                Text(
-                    "Keine Spieler vorhanden",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                )
-            } else {
-                val selectedPlayer = players.find { it.id == selectedPlayerId }
-                Card(
-                    onClick = { showPlayerDialog = true },
-                    modifier = Modifier.size(72.dp),
-                    shape = CARD_CORNER,
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (selectedPlayer != null)
-                            MaterialTheme.colorScheme.primaryContainer
-                        else
-                            MaterialTheme.colorScheme.surfaceVariant
-                    )
-                ) {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            // Top row: Player selection (left) + Recent results (right)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.Top
+            ) {
+                // Left: Spieler
+                Column {
+                    Text("Spieler", style = MaterialTheme.typography.headlineMedium)
+                    Spacer(Modifier.height(4.dp))
+                    if (players.isEmpty()) {
                         Text(
-                            text = selectedPlayer?.name ?: "?",
-                            style = MaterialTheme.typography.labelMedium,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(horizontal = 4.dp)
+                            "Keine Spieler vorhanden",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                         )
+                    } else {
+                        val selectedPlayer = players.find { it.id == selectedPlayerId }
+                        Card(
+                            onClick = { showPlayerDialog = true },
+                            modifier = Modifier.size(144.dp),
+                            shape = CARD_CORNER,
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (selectedPlayer != null)
+                                    MaterialTheme.colorScheme.primaryContainer
+                                else
+                                    MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        ) {
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = selectedPlayer?.name ?: "?",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(horizontal = 8.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Right: Letzte Ergebnisse
+                if (recentSessions.isNotEmpty()) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Letzte Ergebnisse", style = MaterialTheme.typography.headlineMedium)
+                        Spacer(Modifier.height(4.dp))
+                        val firstRow = recentSessions.take(5)
+                        val secondRow = recentSessions.drop(5).take(5)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            firstRow.forEach { session ->
+                                RecentResultCard(session = session, modifier = Modifier.weight(1f))
+                            }
+                            repeat(5 - firstRow.size) { Spacer(Modifier.weight(1f)) }
+                        }
+                        if (secondRow.isNotEmpty()) {
+                            Spacer(Modifier.height(6.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                secondRow.forEach { session ->
+                                    RecentResultCard(session = session, modifier = Modifier.weight(1f))
+                                }
+                                repeat(5 - secondRow.size) { Spacer(Modifier.weight(1f)) }
+                            }
+                        }
                     }
                 }
             }
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(12.dp))
 
             // Mode selection
-            Text("Training", style = MaterialTheme.typography.titleMedium)
-            Spacer(Modifier.height(8.dp))
+            Text("Training", style = MaterialTheme.typography.headlineMedium)
+            Spacer(Modifier.height(4.dp))
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -167,11 +209,11 @@ fun TrainingSetupScreen(
                 }
             }
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(12.dp))
 
             // Difficulty selection
-            Text("Einstellungen", style = MaterialTheme.typography.titleMedium)
-            Spacer(Modifier.height(8.dp))
+            Text("Level", style = MaterialTheme.typography.headlineMedium)
+            Spacer(Modifier.height(4.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 TrainingDifficulty.entries.forEach { difficulty ->
                     DifficultyCard(
@@ -183,37 +225,7 @@ fun TrainingSetupScreen(
                 }
             }
 
-            // Recent results – last 10 as a 2×5 compact grid
-            if (recentSessions.isNotEmpty()) {
-                Spacer(Modifier.height(24.dp))
-                Text("Letzte Ergebnisse", style = MaterialTheme.typography.titleMedium)
-                Spacer(Modifier.height(8.dp))
-                val firstRow = recentSessions.take(5)
-                val secondRow = recentSessions.drop(5).take(5)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    firstRow.forEach { session ->
-                        RecentResultCard(session = session, modifier = Modifier.weight(1f))
-                    }
-                    repeat(5 - firstRow.size) { Spacer(Modifier.weight(1f)) }
-                }
-                if (secondRow.isNotEmpty()) {
-                    Spacer(Modifier.height(6.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        secondRow.forEach { session ->
-                            RecentResultCard(session = session, modifier = Modifier.weight(1f))
-                        }
-                        repeat(5 - secondRow.size) { Spacer(Modifier.weight(1f)) }
-                    }
-                }
-            }
-
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(12.dp))
 
             // Start button
             val canStart = selectedPlayerId != null
@@ -223,12 +235,11 @@ fun TrainingSetupScreen(
                     onStartTraining(selectedMode, selectedDifficulty, playerId)
                 },
                 enabled = canStart,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(ACTION_BTN_H),
-                shape = CARD_CORNER
+                modifier = Modifier.fillMaxWidth().height(ACTION_BTN_H),
+                shape = CARD_CORNER,
+                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp)
             ) {
-                Text("Training starten", style = MaterialTheme.typography.titleMedium)
+                Text("Training starten", fontSize = 28.sp)
             }
         }
     }
@@ -243,7 +254,7 @@ private fun ModeCard(
 ) {
     Card(
         onClick = onClick,
-        modifier = modifier.height(96.dp),
+        modifier = modifier.height(112.dp),
         shape = CARD_CORNER,
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer
@@ -257,7 +268,7 @@ private fun ModeCard(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = mode.displayName(),
-                    style = MaterialTheme.typography.titleSmall,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center,
                     maxLines = 1,
@@ -266,7 +277,7 @@ private fun ModeCard(
                 Spacer(Modifier.height(4.dp))
                 Text(
                     text = mode.description(),
-                    style = MaterialTheme.typography.labelSmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -286,7 +297,7 @@ private fun DifficultyCard(
 ) {
     Card(
         onClick = onClick,
-        modifier = modifier.height(56.dp),
+        modifier = modifier.height(ACTION_BTN_H),
         shape = CARD_CORNER,
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer
@@ -296,7 +307,7 @@ private fun DifficultyCard(
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(
                 text = difficulty.displayName(),
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                 textAlign = TextAlign.Center
             )
@@ -315,32 +326,38 @@ private fun RecentResultCard(session: TrainingSessionEntity, modifier: Modifier 
         else -> "${session.result} Darts"
     }
 
+    // Each row is (playerCardHeight - gap) / 2 = (144 - 6) / 2 = 69dp so two rows + gap = 144dp
     Card(
-        modifier = modifier,
+        modifier = modifier.height(69.dp),
         shape = CARD_CORNER,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         )
     ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
                 text = resultStr,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
-            Text(
-                text = difficulty?.displayName() ?: session.difficulty,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            )
-            Text(
-                text = dateStr,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-            )
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = difficulty?.displayName() ?: session.difficulty,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+                Text(
+                    text = dateStr,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                )
+            }
         }
     }
 }

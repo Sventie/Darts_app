@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.dartsapp.data.model.ScoreMultiplier
 import com.dartsapp.domain.model.DartInput
 
@@ -36,7 +37,7 @@ private enum class InputMode { KEYPAD, BOARD }
 private val BTN_CORNER = RoundedCornerShape(8.dp)
 
 /** Uniform height for ALL interactive buttons (toggle, keypad, specials, undo). */
-private val BTN_H: Dp = 48.dp
+private val BTN_H: Dp = 60.dp
 
 /** Gap between logical button groups in keypad mode. */
 private val GROUP_GAP: Dp = 20.dp
@@ -125,7 +126,7 @@ fun ScoreInputKeypad(
                                         modifier       = Modifier.weight(1f).fillMaxHeight(),
                                         contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
                                     ) {
-                                        Text("$number", style = MaterialTheme.typography.titleLarge)
+                                        Text("$number", style = MaterialTheme.typography.titleLarge.copy(fontSize = 26.sp))
                                     }
                                 }
                             }
@@ -148,7 +149,7 @@ fun ScoreInputKeypad(
                             enabled  = isSingle,
                             shape    = BTN_CORNER,
                             modifier = Modifier.weight(1f).height(BTN_H)
-                        ) { Text("Daneben") }
+                        ) { Text("Daneben", style = MaterialTheme.typography.headlineSmall) }
 
                         OutlinedButton(
                             onClick  = {
@@ -158,7 +159,7 @@ fun ScoreInputKeypad(
                             enabled  = isSingle,
                             shape    = BTN_CORNER,
                             modifier = Modifier.weight(1f).height(BTN_H)
-                        ) { Text("Bull") }
+                        ) { Text("Bull", style = MaterialTheme.typography.headlineSmall) }
 
                         OutlinedButton(
                             onClick  = {
@@ -168,7 +169,7 @@ fun ScoreInputKeypad(
                             enabled  = isSingle,
                             shape    = BTN_CORNER,
                             modifier = Modifier.weight(1f).height(BTN_H)
-                        ) { Text("Bullseye") }
+                        ) { Text("Bullseye", style = MaterialTheme.typography.headlineSmall) }
                     }
                 }
             }
@@ -204,7 +205,7 @@ fun ScoreInputKeypad(
                 .align(Alignment.BottomEnd)
                 .padding(4.dp)   // margin outside the button – does NOT shrink the button
                 .height(BTN_H)
-        ) { Text("Rückgängig") }
+        ) { Text("Rückgängig", style = MaterialTheme.typography.titleMedium) }
     }
 }
 
@@ -225,7 +226,7 @@ private fun ToggleButton(
             shape    = BTN_CORNER,
             modifier = modifier
         ) {
-            Text(label, style = MaterialTheme.typography.bodyMedium)
+            Text(label, style = MaterialTheme.typography.headlineSmall)
         }
     } else {
         OutlinedButton(
@@ -233,7 +234,7 @@ private fun ToggleButton(
             shape    = BTN_CORNER,
             modifier = modifier
         ) {
-            Text(label, style = MaterialTheme.typography.bodyMedium)
+            Text(label, style = MaterialTheme.typography.headlineSmall)
         }
     }
 }

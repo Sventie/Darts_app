@@ -49,7 +49,7 @@ fun PlayerScoreCard(
             ) {
                 Text(
                     text = player.playerName,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -76,7 +76,7 @@ fun PlayerScoreCard(
                     if (isCurrentPlayer) {
                         Text(
                             text = "Du bist dran",
-                            style = MaterialTheme.typography.labelSmall,
+                            style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.primary
                         )
                     }

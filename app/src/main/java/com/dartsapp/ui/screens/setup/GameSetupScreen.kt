@@ -45,11 +45,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.defaultMinSize
 import com.dartsapp.data.db.entity.PlayerEntity
 import com.dartsapp.domain.model.CloseCondition
 import com.dartsapp.domain.model.GameConfig
@@ -58,7 +64,7 @@ import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
 private val CARD_CORNER = RoundedCornerShape(12.dp)
-private val ACTION_BTN_H: Dp = 56.dp
+private val ACTION_BTN_H: Dp = 64.dp
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -107,8 +113,8 @@ fun GameSetupScreen(viewModel: GameSetupViewModel, onBack: () -> Unit, onTrainin
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            Text("Spieler", style = MaterialTheme.typography.titleMedium)
-            Spacer(Modifier.height(8.dp))
+            Text("Spieler", style = MaterialTheme.typography.headlineMedium)
+            Spacer(Modifier.height(4.dp))
 
             BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
                 val trainingBtnW = 160f
@@ -151,24 +157,25 @@ fun GameSetupScreen(viewModel: GameSetupViewModel, onBack: () -> Unit, onTrainin
                         modifier = Modifier.size(width = trainingBtnW.dp, height = cardSizeDp),
                         shape = CARD_CORNER
                     ) {
-                        Text("Training", style = MaterialTheme.typography.titleMedium)
+                        Text("Training", fontSize = 28.sp)
                     }
                 }
             }
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(4.dp))
             OutlinedButton(
-                onClick = { viewModel.randomizePlayerOrder() },
-                enabled = selectedIds.size > 1,
-                modifier = Modifier.fillMaxWidth().height(ACTION_BTN_H),
-                shape = CARD_CORNER
+                onClick        = { viewModel.randomizePlayerOrder() },
+                enabled        = selectedIds.size > 1,
+                modifier       = Modifier.fillMaxWidth().defaultMinSize(minHeight = ACTION_BTN_H),
+                shape          = CARD_CORNER,
+                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp)
             ) {
-                Text("Zufällige Reihenfolge", style = MaterialTheme.typography.bodyLarge)
+                Text("Zufällige Reihenfolge", fontSize = 28.sp)
             }
 
-            Spacer(Modifier.height(24.dp))
-            Text("Startpunkte", style = MaterialTheme.typography.titleMedium)
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(12.dp))
+            Text("Startpunkte", style = MaterialTheme.typography.headlineMedium)
+            Spacer(Modifier.height(4.dp))
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -182,9 +189,9 @@ fun GameSetupScreen(viewModel: GameSetupViewModel, onBack: () -> Unit, onTrainin
                 }
             }
 
-            Spacer(Modifier.height(24.dp))
-            Text("Abschluss", style = MaterialTheme.typography.titleMedium)
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(12.dp))
+            Text("Abschluss", style = MaterialTheme.typography.headlineMedium)
+            Spacer(Modifier.height(4.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 CloseConditionCard(
                     label = "Single Out",
@@ -200,14 +207,15 @@ fun GameSetupScreen(viewModel: GameSetupViewModel, onBack: () -> Unit, onTrainin
                 )
             }
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(12.dp))
             Button(
-                onClick = { viewModel.startGame() },
-                enabled = selectedIds.isNotEmpty(),
-                modifier = Modifier.fillMaxWidth().height(ACTION_BTN_H),
-                shape = CARD_CORNER
+                onClick        = { viewModel.startGame() },
+                enabled        = selectedIds.isNotEmpty(),
+                modifier       = Modifier.fillMaxWidth().defaultMinSize(minHeight = ACTION_BTN_H),
+                shape          = CARD_CORNER,
+                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp)
             ) {
-                Text("Spiel starten", style = MaterialTheme.typography.titleMedium)
+                Text("Spiel starten", fontSize = 28.sp)
             }
         }
     }
@@ -220,6 +228,41 @@ fun GameSetupScreen(viewModel: GameSetupViewModel, onBack: () -> Unit, onTrainin
             onDismiss = { showPlayerDialog = false }
         )
     }
+}
+
+@Composable
+private fun AutoSizeText(
+    text:        String,
+    maxFontSize: TextUnit,
+    minFontSize: TextUnit,
+    modifier:    Modifier = Modifier,
+    fontWeight:  FontWeight? = null,
+    textAlign:   TextAlign? = null,
+    color:       Color = Color.Unspecified,
+) {
+    var fontSize    by remember(text) { mutableStateOf(maxFontSize) }
+    var readyToDraw by remember(text) { mutableStateOf(false) }
+
+    Text(
+        text       = text,
+        fontSize   = fontSize,
+        fontWeight = fontWeight,
+        textAlign  = textAlign,
+        color      = color,
+        maxLines   = 1,
+        softWrap   = false,
+        overflow   = TextOverflow.Visible,
+        modifier   = modifier.drawWithContent { if (readyToDraw) drawContent() },
+        onTextLayout = { result ->
+            if (result.didOverflowWidth) {
+                val next = fontSize * 0.85f
+                fontSize = if (next >= minFontSize) next else minFontSize
+                if (next < minFontSize) readyToDraw = true
+            } else {
+                readyToDraw = true
+            }
+        }
+    )
 }
 
 @Composable
@@ -248,19 +291,19 @@ private fun PlayerCard(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Text(
-                    text = player.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center
+                AutoSizeText(
+                    text        = player.name,
+                    maxFontSize = 26.sp,
+                    minFontSize = 12.sp,
+                    fontWeight  = FontWeight.Bold,
+                    textAlign   = TextAlign.Center,
+                    modifier    = Modifier.fillMaxWidth()
                 )
                 if (statLabel != null) {
                     Spacer(Modifier.height(4.dp))
                     Text(
                         text = statLabel,
-                        style = MaterialTheme.typography.labelSmall,
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
                         textAlign = TextAlign.Center,
                         maxLines = 1
@@ -274,11 +317,11 @@ private fun PlayerCard(
 private fun randomStatLabel(stats: PlayerStats?): String? {
     if (stats == null || stats.gamesPlayed == 0) return null
     val options = buildList {
-        add("Ø ${String.format("%.1f", stats.avgScorePerRound)} / Aufn.")
-        add("Bestes: ${stats.highestRound}")
-        add("${stats.wins} Siege")
-        add("${stats.gamesPlayed} Spiele")
-        if (stats.totalDartsThrown > 0) add("${stats.totalDartsThrown} Darts")
+        add("Ø Punkte/Runde: ${String.format("%.1f", stats.avgScorePerRound)}")
+        add("Höchste Runde: ${stats.highestRound}")
+        add("Siege: ${stats.wins}")
+        add("Gespielte Spiele: ${stats.gamesPlayed}")
+        if (stats.totalDartsThrown > 0) add("Darts gesamt: ${stats.totalDartsThrown}")
     }
     return options.random()
 }
@@ -327,7 +370,7 @@ private fun CloseConditionCard(
         )
     ) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(label, style = MaterialTheme.typography.bodyMedium)
+            Text(label, style = MaterialTheme.typography.bodyMedium.copy(fontSize = 20.sp))
         }
     }
 }
