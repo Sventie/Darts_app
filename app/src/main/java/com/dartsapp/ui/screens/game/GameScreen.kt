@@ -338,21 +338,21 @@ private fun DartsInfoCard(
         )
     ) {
         Row(
-            modifier = Modifier.padding(12.dp).fillMaxWidth(),
+            modifier = Modifier.padding(16.dp).fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Left: label + dart values
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
                     text = "Würfe",
-                    style = MaterialTheme.typography.labelSmall,
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 val dartLabels = if (darts.isEmpty()) "–"
                     else darts.joinToString("  –  ") { it.scoreValue.toString() }
                 Text(
                     text = dartLabels,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.SemiBold
                 )
             }
@@ -360,7 +360,7 @@ private fun DartsInfoCard(
             if (darts.isNotEmpty()) {
                 Text(
                     text = "$total",
-                    style = MaterialTheme.typography.headlineMedium,
+                    style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.Bold,
                     color = if (isBust) MaterialTheme.colorScheme.error
                     else MaterialTheme.colorScheme.onSurface
@@ -382,18 +382,18 @@ private fun CheckoutSuggestionCard(
         )
     ) {
         Row(
-            modifier = Modifier.padding(12.dp).fillMaxWidth(),
+            modifier = Modifier.padding(16.dp).fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
                     text = "Checkout",
-                    style = MaterialTheme.typography.labelSmall,
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
                 )
                 Text(
                     text = if (suggestion != null) suggestion.joinToString("  –  ") else "–",
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSecondaryContainer
                 )
