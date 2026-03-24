@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 @Composable
 fun HomeScreen(
@@ -69,7 +70,7 @@ private fun LandscapeLayout(
         ) {
             Text(
                 text = "Cloudflight Darts",
-                style = MaterialTheme.typography.displayLarge,
+                style = MaterialTheme.typography.displayLarge.copy(fontSize = 96.sp),
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
@@ -116,7 +117,7 @@ private fun PortraitLayout(
     ) {
         Text(
             text = "Cloudflight Darts",
-            style = MaterialTheme.typography.displaySmall,
+            style = MaterialTheme.typography.displaySmall.copy(fontSize = 64.sp),
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(bottom = 16.dp)
@@ -153,7 +154,7 @@ private fun MenuCard(label: String, onClick: () -> Unit, modifier: Modifier = Mo
         ) {
             Text(
                 text = label,
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.titleLarge.copy(fontSize = 38.sp),
                 textAlign = TextAlign.Center
             )
         }
