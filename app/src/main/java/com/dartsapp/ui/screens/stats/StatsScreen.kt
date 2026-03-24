@@ -54,6 +54,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.dartsapp.domain.model.PlayerStats
 import java.util.Locale
@@ -322,22 +323,27 @@ private fun ComparePlayersDialog(
 ) {
     var selectedIds by remember { mutableStateOf(initialSelection) }
 
-    Dialog(onDismissRequest = onDismiss) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
         Surface(
-            shape = RoundedCornerShape(16.dp),
-            tonalElevation = 6.dp
+            shape          = RoundedCornerShape(16.dp),
+            tonalElevation = 6.dp,
+            modifier       = Modifier.fillMaxSize(0.8f)
         ) {
             Column(
                 modifier = Modifier
+                    .fillMaxSize()
                     .padding(24.dp)
                     .verticalScroll(rememberScrollState())
             ) {
-                Text("Spieler vergleichen", style = MaterialTheme.typography.titleLarge)
+                Text("Spieler vergleichen", style = MaterialTheme.typography.headlineMedium)
                 Spacer(Modifier.height(16.dp))
 
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement   = Arrangement.spacedBy(8.dp)
                 ) {
                     allPlayers.forEach { player ->
                         val isSelected = player.playerId in selectedIds
@@ -346,20 +352,21 @@ private fun ComparePlayersDialog(
                                 selectedIds = if (isSelected) selectedIds - player.playerId
                                               else selectedIds + player.playerId
                             },
-                            modifier = Modifier.size(72.dp),
-                            colors = CardDefaults.cardColors(
+                            modifier = Modifier.size(144.dp),
+                            shape    = RoundedCornerShape(12.dp),
+                            colors   = CardDefaults.cardColors(
                                 containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer
                                                  else MaterialTheme.colorScheme.surfaceVariant
                             )
                         ) {
                             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Text(
-                                    text = player.playerName,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis,
-                                    textAlign = TextAlign.Center,
-                                    modifier = Modifier.padding(horizontal = 4.dp)
+                                AutoSizeText(
+                                    text        = player.playerName,
+                                    maxFontSize = 26.sp,
+                                    minFontSize = 12.sp,
+                                    fontWeight  = FontWeight.Bold,
+                                    textAlign   = TextAlign.Center,
+                                    modifier    = Modifier.padding(horizontal = 8.dp)
                                 )
                             }
                         }
@@ -369,16 +376,20 @@ private fun ComparePlayersDialog(
                 Spacer(Modifier.height(24.dp))
 
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier              = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
                 ) {
-                    TextButton(onClick = onDismiss) { Text("Abbrechen") }
+                    TextButton(
+                        onClick        = onDismiss,
+                        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
+                        modifier       = Modifier.defaultMinSize(minHeight = 64.dp)
+                    ) { Text("Abbrechen", fontSize = 28.sp) }
                     Button(
-                        onClick = { onConfirm(selectedIds) },
-                        enabled = selectedIds.size >= 2
-                    ) {
-                        Text("Vergleichen")
-                    }
+                        onClick        = { onConfirm(selectedIds) },
+                        enabled        = selectedIds.size >= 2,
+                        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
+                        modifier       = Modifier.defaultMinSize(minHeight = 64.dp)
+                    ) { Text("Vergleichen", fontSize = 28.sp) }
                 }
             }
         }
