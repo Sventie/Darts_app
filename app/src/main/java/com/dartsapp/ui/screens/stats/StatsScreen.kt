@@ -30,6 +30,7 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -274,31 +275,23 @@ private fun SortOrderDialog(
 ) {
     var selected by remember { mutableStateOf(current) }
 
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
+    Dialog(onDismissRequest = onDismiss) {
         Surface(
-            shape          = RoundedCornerShape(16.dp),
-            tonalElevation = 6.dp,
-            modifier       = Modifier.fillMaxSize(0.8f)
+            shape          = MaterialTheme.shapes.large,
+            tonalElevation = 6.dp
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(24.dp)
-            ) {
-                Text("Sortieren", style = MaterialTheme.typography.headlineMedium)
+            Column(modifier = Modifier.padding(24.dp)) {
+                Text("Sortieren", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(16.dp))
 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(
                         SortOrder.BY_NAME  to "Nach Name",
-                        SortOrder.BY_VALUE to "Nach höchstem Wert (Siege)"
+                        SortOrder.BY_VALUE to "Nach Siegen"
                     ).forEach { (order, label) ->
                         Card(
                             onClick  = { selected = order },
-                            modifier = Modifier.weight(1f).height(56.dp),
+                            modifier = Modifier.weight(1f).height(64.dp),
                             shape    = RoundedCornerShape(12.dp),
                             colors   = CardDefaults.cardColors(
                                 containerColor = if (selected == order)
@@ -310,7 +303,7 @@ private fun SortOrderDialog(
                             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                 Text(
                                     text       = label,
-                                    style      = MaterialTheme.typography.bodyMedium,
+                                    style      = MaterialTheme.typography.titleLarge,
                                     fontWeight = if (selected == order) FontWeight.Bold else FontWeight.Normal,
                                     textAlign  = TextAlign.Center,
                                     modifier   = Modifier.padding(horizontal = 8.dp)
@@ -320,22 +313,20 @@ private fun SortOrderDialog(
                     }
                 }
 
-                Spacer(Modifier.weight(1f))
+                Spacer(Modifier.height(20.dp))
 
                 Row(
                     modifier              = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    TextButton(
-                        onClick        = onDismiss,
-                        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
-                        modifier       = Modifier.defaultMinSize(minHeight = 64.dp)
-                    ) { Text("Abbrechen", fontSize = 28.sp) }
+                    OutlinedButton(
+                        onClick   = onDismiss,
+                        modifier  = Modifier.weight(1f)
+                    ) { Text("Abbrechen", style = MaterialTheme.typography.titleMedium) }
                     Button(
-                        onClick        = { onConfirm(selected) },
-                        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
-                        modifier       = Modifier.defaultMinSize(minHeight = 64.dp)
-                    ) { Text("OK", fontSize = 28.sp) }
+                        onClick  = { onConfirm(selected) },
+                        modifier = Modifier.weight(1f)
+                    ) { Text("OK", style = MaterialTheme.typography.titleMedium) }
                 }
             }
         }
