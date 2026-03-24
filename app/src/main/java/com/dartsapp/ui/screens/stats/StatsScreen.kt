@@ -408,9 +408,9 @@ private fun StatCategorySection(
                 fontWeight = FontWeight.SemiBold
             )
             Text(
-                text  = description,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                text     = description,
+                style    = MaterialTheme.typography.bodySmall.copy(fontSize = 24.sp),
+                color    = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
