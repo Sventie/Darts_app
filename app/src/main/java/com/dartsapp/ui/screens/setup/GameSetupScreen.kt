@@ -114,7 +114,7 @@ fun GameSetupScreen(viewModel: GameSetupViewModel, onBack: () -> Unit, onTrainin
                 .verticalScroll(rememberScrollState())
         ) {
             Text("Spieler", style = MaterialTheme.typography.headlineMedium)
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(4.dp))
 
             BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
                 val trainingBtnW = 160f
@@ -162,7 +162,7 @@ fun GameSetupScreen(viewModel: GameSetupViewModel, onBack: () -> Unit, onTrainin
                 }
             }
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(4.dp))
             OutlinedButton(
                 onClick        = { viewModel.randomizePlayerOrder() },
                 enabled        = selectedIds.size > 1,
@@ -173,9 +173,9 @@ fun GameSetupScreen(viewModel: GameSetupViewModel, onBack: () -> Unit, onTrainin
                 Text("Zufällige Reihenfolge", fontSize = 28.sp)
             }
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(12.dp))
             Text("Startpunkte", style = MaterialTheme.typography.headlineMedium)
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(4.dp))
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -189,9 +189,9 @@ fun GameSetupScreen(viewModel: GameSetupViewModel, onBack: () -> Unit, onTrainin
                 }
             }
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(12.dp))
             Text("Abschluss", style = MaterialTheme.typography.headlineMedium)
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(4.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 CloseConditionCard(
                     label = "Single Out",
@@ -207,7 +207,7 @@ fun GameSetupScreen(viewModel: GameSetupViewModel, onBack: () -> Unit, onTrainin
                 )
             }
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(12.dp))
             Button(
                 onClick        = { viewModel.startGame() },
                 enabled        = selectedIds.isNotEmpty(),
