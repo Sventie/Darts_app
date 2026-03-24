@@ -191,9 +191,9 @@ fun DartBoardDispersion(
         // Guide rings at every 0.1 step with label at bottom
         // ── Tune these two values to taste ──────────────────────────────────
         val guideRingColor       = Color(0x880088FF) // opacity (0x00–0xFF) + hue
-        val guideRingStrokeWidth = 1.5f              // px
+        val guideRingStrokeWidth = 1f                // px
         // ────────────────────────────────────────────────────────────────────
-        val guideStyle = TextStyle(color = guideRingColor, fontSize = 8.sp, fontWeight = FontWeight.Medium)
+        val guideStyle = TextStyle(color = guideRingColor, fontSize = 12.sp, fontWeight = FontWeight.Medium)
         val labelGapPadding = 6f  // extra px on each side of the label
         for (step in 1..10) {
             val guideRadius = minRadius + (step / 10f) * (maxRadius - minRadius)
