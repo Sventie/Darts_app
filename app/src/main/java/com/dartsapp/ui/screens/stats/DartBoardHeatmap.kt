@@ -21,6 +21,8 @@ import androidx.compose.ui.unit.sp
 import com.dartsapp.domain.usecase.stats.GetHeatPositionsUseCase.HitPosition
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import androidx.compose.ui.geometry.Size
+import kotlin.math.asin
 import kotlin.math.cos
 import kotlin.math.exp
 import kotlin.math.roundToInt
@@ -162,8 +164,8 @@ fun DartBoardHeatmap(
 }
 
 /**
- * Dartboard with a dispersion circle. The circle is centered at the bullseye
- * and has a radius proportional to [dispersion] (0=tiny, 1=double ring edge).
+ * Dartboard with a dispersion circle. The circle is centered at the Triple 20
+ * field centre and has a radius proportional to [dispersion] (0=tiny, 1=double ring edge).
  */
 @Composable
 fun DartBoardDispersion(
@@ -180,13 +182,54 @@ fun DartBoardDispersion(
         drawCircle(color = ColLabelRing, radius = R * R_LABEL_RING_OUT, center = center)
         drawCircle(color = ColBoardBg,   radius = R * R_DOUBLE_OUT,     center = center)
 
-        val minRadius    = R * 0.02f
+        // Circle centred on Triple 20 (top of board, angle = -90°)
+        val rT20 = (R_TRIPLE_IN + R_TRIPLE_OUT) / 2f
+        val t20Center = Offset(cx, cy - R * rT20)
+        val minRadius = R * 0.02f
+        val maxRadius = R_DOUBLE_OUT * R
+
+        // Guide rings at every 0.1 step with label at bottom
+        // ── Tune these two values to taste ──────────────────────────────────
+        val guideRingColor       = Color(0x880088FF) // opacity (0x00–0xFF) + hue
+        val guideRingStrokeWidth = 1f                // px
+        // ────────────────────────────────────────────────────────────────────
+        val guideStyle = TextStyle(color = guideRingColor, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+        val labelGapPadding = 6f  // extra px on each side of the label
+        for (step in 1..10) {
+            val guideRadius = minRadius + (step / 10f) * (maxRadius - minRadius)
+            val label    = if (step == 10) "1,0" else "0,$step"
+            val measured = textMeasurer.measure(label, guideStyle)
+
+            // Angular half-width of the gap (label half-width + padding)
+            val halfGapPx  = measured.size.width / 2f + labelGapPadding
+            val halfGapDeg = if (halfGapPx < guideRadius)
+                Math.toDegrees(asin((halfGapPx / guideRadius).toDouble())).toFloat()
+            else 90f  // ring too small – skip ring, only draw label
+
+            // Arc centred on t20Center; gap at 90° (bottom of circle)
+            val arcStart  = 90f + halfGapDeg
+            val arcSweep  = 360f - 2f * halfGapDeg
+            drawArc(
+                color      = guideRingColor,
+                startAngle = arcStart,
+                sweepAngle = arcSweep,
+                useCenter  = false,
+                topLeft    = Offset(t20Center.x - guideRadius, t20Center.y - guideRadius),
+                size       = Size(guideRadius * 2f, guideRadius * 2f),
+                style      = Stroke(guideRingStrokeWidth)
+            )
+
+            val labelX = t20Center.x - measured.size.width  / 2f
+            val labelY = t20Center.y + guideRadius - measured.size.height / 2f
+            drawText(measured, topLeft = Offset(labelX, labelY))
+        }
+
         val circleRadius = if (dispersion > 0f)
-            minRadius + dispersion * (R_DOUBLE_OUT * R - minRadius)
+            minRadius + dispersion * (maxRadius - minRadius)
         else 0f
         if (circleRadius > 0f) {
-            drawCircle(color = Color(0x440088FF), radius = circleRadius, center = center)
-            drawCircle(color = Color(0xCC0088FF), radius = circleRadius, center = center, style = Stroke(4f))
+            drawCircle(color = Color(0x440088FF), radius = circleRadius, center = t20Center)
+            drawCircle(color = Color(0xCC0088FF), radius = circleRadius, center = t20Center, style = Stroke(4f))
         }
 
         drawBoardWiresAndLabels(center, R, textMeasurer)
