@@ -186,15 +186,21 @@ fun DartBoardDispersion(
         val minRadius = R * 0.02f
         val maxRadius = R_DOUBLE_OUT * R
 
-        // Guide rings at every 0.1 step
+        // Guide rings at every 0.1 step with label at bottom
+        val guideStyle = TextStyle(color = Color(0xBB0088FF), fontSize = 8.sp, fontWeight = FontWeight.Medium)
         for (step in 1..10) {
             val guideRadius = minRadius + (step / 10f) * (maxRadius - minRadius)
             drawCircle(
-                color  = Color(0x330088FF),
+                color  = Color(0x880088FF),
                 radius = guideRadius,
                 center = t20Center,
-                style  = Stroke(1f)
+                style  = Stroke(1.5f)
             )
+            val label    = if (step == 10) "1,0" else "0,$step"
+            val measured = textMeasurer.measure(label, guideStyle)
+            val labelX   = t20Center.x - measured.size.width  / 2f
+            val labelY   = t20Center.y + guideRadius - measured.size.height / 2f
+            drawText(measured, topLeft = Offset(labelX, labelY))
         }
 
         val circleRadius = if (dispersion > 0f)
