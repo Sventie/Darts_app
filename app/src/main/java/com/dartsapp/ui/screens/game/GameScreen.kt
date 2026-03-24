@@ -345,7 +345,7 @@ private fun DartsInfoCard(
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
                     text = "Würfe",
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 val dartLabels = if (darts.isEmpty()) "–"
@@ -388,7 +388,7 @@ private fun CheckoutSuggestionCard(
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
                     text = "Checkout",
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
                 )
                 Text(
