@@ -303,7 +303,7 @@ private fun PlayerCard(
                     Spacer(Modifier.height(4.dp))
                     Text(
                         text = statLabel,
-                        style = MaterialTheme.typography.labelSmall,
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
                         textAlign = TextAlign.Center,
                         maxLines = 1
@@ -317,11 +317,11 @@ private fun PlayerCard(
 private fun randomStatLabel(stats: PlayerStats?): String? {
     if (stats == null || stats.gamesPlayed == 0) return null
     val options = buildList {
-        add("Ø ${String.format("%.1f", stats.avgScorePerRound)} / Aufn.")
-        add("Bestes: ${stats.highestRound}")
-        add("${stats.wins} Siege")
-        add("${stats.gamesPlayed} Spiele")
-        if (stats.totalDartsThrown > 0) add("${stats.totalDartsThrown} Darts")
+        add("Ø Punkte/Runde: ${String.format("%.1f", stats.avgScorePerRound)}")
+        add("Höchste Runde: ${stats.highestRound}")
+        add("Siege: ${stats.wins}")
+        add("Gespielte Spiele: ${stats.gamesPlayed}")
+        if (stats.totalDartsThrown > 0) add("Darts gesamt: ${stats.totalDartsThrown}")
     }
     return options.random()
 }
