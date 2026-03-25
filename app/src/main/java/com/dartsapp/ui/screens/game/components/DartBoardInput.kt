@@ -188,7 +188,7 @@ private fun DrawScope.drawBoard(center: Offset, R: Float, textMeasurer: androidx
         val startAngle = -90f + i * 18f - 9f
         val sweep      = 18f
         val isEven     = (i % 2 == 0)
-        val colSingle  = if (isEven) ColCream else ColBlack
+        val colSingle  = if (isEven) ColBlack else ColCream
         val colScore   = if (isEven) ColRed   else ColGreen
 
         drawAnnularSector(center, R * R_TRIPLE_IN,  R * R_BULL,       startAngle, sweep, colSingle)
