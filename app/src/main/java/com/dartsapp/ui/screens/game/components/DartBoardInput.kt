@@ -10,6 +10,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -76,30 +77,38 @@ fun DartBoardInput(
 ) {
     val textMeasurer = rememberTextMeasurer()
 
-    // Normalised positions (tapX, tapY) of the last committed round, fading out
+    // Local tap positions – updated immediately in the tap handler so dart 3 is never
+    // lost when the ViewModel auto-commits the round in the same frame.
+    var livePositions  by remember { mutableStateOf<List<Pair<Float, Float>>>(emptyList()) }
     var ghostPositions by remember { mutableStateOf<List<Pair<Float, Float>>>(emptyList()) }
     val ghostAlpha     = remember { Animatable(0f) }
 
-    // Track the previous dart list so we can detect a round-clear transition
-    val prevDartsRef = remember { mutableStateOf(currentRoundDarts) }
-
     LaunchedEffect(currentRoundDarts) {
-        val prev = prevDartsRef.value
-        prevDartsRef.value = currentRoundDarts
-
-        if (currentRoundDarts.isEmpty() && prev.isNotEmpty()) {
-            // Round was committed: fade out the previous markers
-            ghostPositions = prev.mapNotNull { d ->
-                val tx = d.tapX; val ty = d.tapY
-                if (tx != null && ty != null) tx to ty else null
+        when {
+            currentRoundDarts.isEmpty() && livePositions.isNotEmpty() -> {
+                // Round committed: hold markers for 1 s, then fade out
+                ghostPositions = livePositions
+                livePositions  = emptyList()
+                ghostAlpha.snapTo(1f)
+                delay(1000)
+                ghostAlpha.animateTo(0f, animationSpec = tween(durationMillis = 800))
+                ghostPositions = emptyList()
             }
-            ghostAlpha.snapTo(1f)
-            ghostAlpha.animateTo(0f, animationSpec = tween(durationMillis = 1000))
-            ghostPositions = emptyList()
-        } else {
-            // Dart added, removed (undo) or player switched: cancel any lingering ghost
-            ghostAlpha.snapTo(0f)
-            ghostPositions = emptyList()
+            currentRoundDarts.isNotEmpty() -> {
+                // Sync with VM state so undo / player-switch are reflected correctly
+                livePositions = currentRoundDarts.mapNotNull { d ->
+                    val tx = d.tapX; val ty = d.tapY
+                    if (tx != null && ty != null) tx to ty else null
+                }
+                ghostAlpha.snapTo(0f)
+                ghostPositions = emptyList()
+            }
+            else -> {
+                // Both empty (new round / player switch while empty)
+                livePositions  = emptyList()
+                ghostAlpha.snapTo(0f)
+                ghostPositions = emptyList()
+            }
         }
     }
 
@@ -137,6 +146,9 @@ fun DartBoardInput(
                             DartInput(field, mult, field * mult.value, nx, ny)
                         }
                     }
+                    // Capture position locally BEFORE onDartEntered so that dart 3 is
+                    // never lost when the ViewModel auto-commits the round in the same frame.
+                    livePositions = livePositions + (nx to ny)
                     onDartEntered(input)
                 }
             }
@@ -150,14 +162,13 @@ fun DartBoardInput(
 
         val markerRadius = R * 0.02f
 
-        // Live markers – derived from the ViewModel state; always correct after undo/player switch
-        currentRoundDarts.forEach { dart ->
-            val tx = dart.tapX; val ty = dart.tapY
-            if (tx != null && ty != null) {
-                val pos = Offset(tx * R + cx, ty * R + cy)
-                drawCircle(color = Color.Red,   radius = markerRadius, center = pos)
-                drawCircle(color = Color.White, radius = markerRadius, center = pos, style = Stroke(2f))
-            }
+        // Live markers – from local state so dart 3 is visible even when the ViewModel
+        // auto-commits the round before the next frame (livePositions is synced back
+        // from currentRoundDarts on undo / player switch via the LaunchedEffect above).
+        livePositions.forEach { (nx, ny) ->
+            val pos = Offset(nx * R + cx, ny * R + cy)
+            drawCircle(color = Color.Red,   radius = markerRadius, center = pos)
+            drawCircle(color = Color.White, radius = markerRadius, center = pos, style = Stroke(2f))
         }
 
         // Ghost markers – previous round fading out
