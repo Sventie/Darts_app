@@ -22,7 +22,6 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
-import androidx.compose.ui.input.pointer.awaitFirstDown
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
@@ -137,14 +136,18 @@ fun DartBoardInput(
             .pointerInput(Unit) {
                 awaitEachGesture {
                     // Show magnifier immediately on press; register dart on release.
-                    val down = awaitFirstDown(requireUnconsumed = false)
-                    var position = down.position
+                    val downEvent   = awaitPointerEvent()
+                    val firstChange = downEvent.changes.firstOrNull() ?: return@awaitEachGesture
+                    if (!firstChange.pressed) return@awaitEachGesture
+                    firstChange.consume()
+                    val downId      = firstChange.id
+                    var position    = firstChange.position
                     magnifierPosition = position
 
                     // Track finger until lifted
                     while (true) {
                         val event  = awaitPointerEvent()
-                        val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                        val change = event.changes.firstOrNull { it.id == downId } ?: break
                         if (!change.pressed) break
                         position = change.position
                         magnifierPosition = position
@@ -238,7 +241,7 @@ fun DartBoardInput(
                         // Crosshair at exact touch position
                         drawCircle(Color.Red,   markerRadius, touchPos)
                         drawCircle(Color.White, markerRadius, touchPos,
-                                   style = Stroke(strokeWidth = 2f / zoomFactor))
+                                   style = Stroke(2f / zoomFactor))
                     }
                 }
             }
