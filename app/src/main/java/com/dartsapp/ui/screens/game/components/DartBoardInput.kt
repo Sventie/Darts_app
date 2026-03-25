@@ -23,6 +23,8 @@ import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
@@ -95,6 +97,10 @@ fun DartBoardInput(
     var magnifierPosition by remember { mutableStateOf<Offset?>(null) }
     val currentMagnifierPos = magnifierPosition
 
+    // Y position of the canvas top in the window (pixels). Used to allow the magnifier
+    // to extend above the canvas up to the screen edge.
+    var canvasTopPx by remember { mutableStateOf(0f) }
+
     // Magnifier delay: gesture handler writes holdStartMs (non-zero = pressed, 0 = released)
     // and keeps positionHolder up to date. LaunchedEffect shows the magnifier after 500 ms
     // without needing any suspend call inside the @RestrictsSuspension AwaitPointerEventScope.
@@ -146,6 +152,9 @@ fun DartBoardInput(
 
     Canvas(
         modifier = modifier
+            .onGloballyPositioned { coords ->
+                canvasTopPx = coords.positionInWindow().y.toFloat()
+            }
             .pointerInput(Unit) {
                 awaitEachGesture {
                     val downEvent   = awaitPointerEvent()
@@ -240,10 +249,13 @@ fun DartBoardInput(
             val magnRadius = R * 0.28f
             val zoomFactor = 3f
 
-            // Position above the finger; clamp so the circle stays within the canvas
+            // Position above the finger; clamp horizontally within the canvas,
+            // and vertically so the top edge reaches at most the screen top edge
+            // (canvasTopPx is the canvas Y offset from the window top in px).
             val magnCx = touchPos.x.coerceIn(magnRadius, size.width  - magnRadius)
+            val minMagnCy = magnRadius - canvasTopPx   // screen-top boundary in canvas coords
             val magnCy = (touchPos.y - magnRadius - R * 0.08f)
-                .coerceIn(magnRadius, size.height - magnRadius)
+                .coerceIn(minMagnCy, size.height - magnRadius)
             val magnCenter = Offset(magnCx, magnCy)
 
             val circlePath = Path().apply { addOval(Rect(magnCenter, magnRadius)) }
