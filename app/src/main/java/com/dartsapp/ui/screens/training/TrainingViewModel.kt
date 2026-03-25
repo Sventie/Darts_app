@@ -65,7 +65,9 @@ sealed class ModeState {
         val difficulty: TrainingDifficulty,
         val lastDart: DartInput? = null,
         /** dartsOnCurrentNumber value before the last hit – used to restore on undo. */
-        val prevDartsOnNumber: Int = 0
+        val prevDartsOnNumber: Int = 0,
+        /** The dart thrown before lastDart – restored as the visible marker on undo. */
+        val prevDart: DartInput? = null
     ) : ModeState() {
         val requiresDoubleForCurrent: Boolean
             get() = requiresDouble(currentNumber, difficulty)
@@ -260,7 +262,8 @@ class TrainingViewModel @Inject constructor(
                     dartsOnCurrentNumber = state.prevDartsOnNumber,
                     totalDarts = state.totalDarts - 1,
                     completedNumbers = state.completedNumbers.dropLast(1),
-                    lastDart = null,
+                    lastDart = state.prevDart,
+                    prevDart = null,
                     prevDartsOnNumber = 0
                 )
             )
@@ -270,7 +273,8 @@ class TrainingViewModel @Inject constructor(
                 state.copy(
                     dartsOnCurrentNumber = state.dartsOnCurrentNumber - 1,
                     totalDarts = state.totalDarts - 1,
-                    lastDart = null
+                    lastDart = state.prevDart,
+                    prevDart = null
                 )
             )
         }
@@ -292,6 +296,7 @@ class TrainingViewModel @Inject constructor(
                         dartsOnCurrentNumber = 0,
                         totalDarts = newTotal,
                         completedNumbers = newCompleted,
+                        prevDart = state.lastDart,
                         lastDart = dart,
                         prevDartsOnNumber = state.dartsOnCurrentNumber
                     )
@@ -302,6 +307,7 @@ class TrainingViewModel @Inject constructor(
                 state.copy(
                     dartsOnCurrentNumber = state.dartsOnCurrentNumber + 1,
                     totalDarts = newTotal,
+                    prevDart = state.lastDart,
                     lastDart = dart
                 )
             )
