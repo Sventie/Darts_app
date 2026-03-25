@@ -3,7 +3,6 @@ package com.dartsapp.ui.screens.game.components
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
@@ -134,15 +133,20 @@ fun DartBoardInput(
     Canvas(
         modifier = modifier
             .pointerInput(Unit) {
-                awaitEachGesture {
-                    // Show magnifier immediately on press; register dart on release.
+                while (true) {
+                    // Wait for a finger down event
                     val downEvent   = awaitPointerEvent()
-                    val firstChange = downEvent.changes.firstOrNull() ?: return@awaitEachGesture
-                    if (!firstChange.pressed) return@awaitEachGesture
+                    val firstChange = downEvent.changes.firstOrNull() ?: continue
+                    if (!firstChange.pressed) continue
                     firstChange.consume()
-                    val downId      = firstChange.id
-                    var position    = firstChange.position
-                    magnifierPosition = position
+                    val downId   = firstChange.id
+                    var position = firstChange.position
+
+                    // Show magnifier only after 500 ms of holding
+                    val magnifierJob = launch {
+                        delay(500)
+                        magnifierPosition = position
+                    }
 
                     // Track finger until lifted
                     while (true) {
@@ -150,9 +154,10 @@ fun DartBoardInput(
                         val change = event.changes.firstOrNull { it.id == downId } ?: break
                         if (!change.pressed) break
                         position = change.position
-                        magnifierPosition = position
+                        if (magnifierJob.isCompleted) magnifierPosition = position
                         change.consume()
                     }
+                    magnifierJob.cancel()
                     magnifierPosition = null
 
                     // Dart calculation – same logic as before, using final release position
