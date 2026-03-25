@@ -305,13 +305,14 @@ class GameViewModel @Inject constructor(
             roundNumber = activeGame.roundNumber
         )
 
-        // Update the current player's score
+        // Update the current player's score and store last round darts for display
         val updatedPlayers = activeGame.players.mapIndexed { idx, player ->
             if (idx == activeGame.currentPlayerIndex) {
                 player.copy(
                     remainingScore = result.scoreAfter,
                     currentRoundDarts = emptyList(),
-                    scoreBeforeRound = result.scoreAfter
+                    scoreBeforeRound = result.scoreAfter,
+                    lastRoundDarts = darts
                 )
             } else player
         }
@@ -350,6 +351,11 @@ class GameViewModel @Inject constructor(
         darts: List<DartInput>,
         lastCommittedRound: LastCommittedRound?
     ): GameUiState.Playing {
+        // Clear lastRoundDarts for the player who is now throwing so the card stays clean
+        val clearedPlayers = game.players.mapIndexed { idx, p ->
+            if (idx == game.currentPlayerIndex) p.copy(lastRoundDarts = emptyList()) else p
+        }
+        val game = game.copy(players = clearedPlayers)
         val player = game.currentPlayer
         val roundTotal = darts.sumOf { it.scoreValue }
         val projected = player.remainingScore - roundTotal

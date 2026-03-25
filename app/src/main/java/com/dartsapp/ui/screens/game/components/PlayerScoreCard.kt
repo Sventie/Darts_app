@@ -79,6 +79,13 @@ fun PlayerScoreCard(
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.primary
                         )
+                    } else if (player.lastRoundDarts.isNotEmpty()) {
+                        Text(
+                            text = player.lastRoundDarts.joinToString("  –  ") { it.scoreValue.toString() },
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            textAlign = TextAlign.Center
+                        )
                     }
                 }
             }
