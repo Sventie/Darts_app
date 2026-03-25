@@ -3,7 +3,7 @@ package com.dartsapp.ui.screens.game.components
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
@@ -19,6 +19,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.input.pointer.awaitFirstDown
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
@@ -87,6 +91,11 @@ fun DartBoardInput(
     // commit (triggered by a tap) from an undo (triggered externally).
     var justTapped by remember { mutableStateOf(false) }
 
+    // Current finger position while pressed – drives the magnifier overlay.
+    // Read here (composition scope) so Canvas redraws on every position update.
+    var magnifierPosition by remember { mutableStateOf<Offset?>(null) }
+    val currentMagnifierPos = magnifierPosition
+
     LaunchedEffect(currentRoundDarts) {
         val wasTap = justTapped
         justTapped = false
@@ -126,16 +135,32 @@ fun DartBoardInput(
     Canvas(
         modifier = modifier
             .pointerInput(Unit) {
-                detectTapGestures { offset ->
-                    val cx = size.width / 2f
-                    val cy = size.height / 2f
-                    val R  = size.width / 2f
-                    val dx = offset.x - cx
-                    val dy = offset.y - cy
-                    val rNorm = sqrt(dx * dx + dy * dy) / R
+                awaitEachGesture {
+                    // Show magnifier immediately on press; register dart on release.
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    var position = down.position
+                    magnifierPosition = position
 
-                    val nx = dx / R   // normalised coords: 0,0=centre, ±1=canvas edge
-                    val ny = dy / R
+                    // Track finger until lifted
+                    while (true) {
+                        val event  = awaitPointerEvent()
+                        val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                        if (!change.pressed) break
+                        position = change.position
+                        magnifierPosition = position
+                        change.consume()
+                    }
+                    magnifierPosition = null
+
+                    // Dart calculation – same logic as before, using final release position
+                    val cx    = size.width  / 2f
+                    val cy    = size.height / 2f
+                    val R     = size.width  / 2f
+                    val dx    = position.x - cx
+                    val dy    = position.y - cy
+                    val rNorm = sqrt(dx * dx + dy * dy) / R
+                    val nx    = dx / R
+                    val ny    = dy / R
                     val input: DartInput = when {
                         rNorm < R_BULLSEYE   -> DartInput(50, ScoreMultiplier.SINGLE, 50, nx, ny)
                         rNorm < R_BULL       -> DartInput(25, ScoreMultiplier.SINGLE, 25, nx, ny)
@@ -186,6 +211,41 @@ fun DartBoardInput(
                 drawCircle(color = Color.Red.copy(alpha = ghostA),   radius = markerRadius, center = pos)
                 drawCircle(color = Color.White.copy(alpha = ghostA), radius = markerRadius, center = pos, style = Stroke(2f))
             }
+        }
+
+        // Magnifier – shown while the finger is held down
+        currentMagnifierPos?.let { touchPos ->
+            val magnRadius = R * 0.28f
+            val zoomFactor = 3f
+
+            // Position above the finger; clamp so the circle stays within the canvas
+            val magnCx = touchPos.x.coerceIn(magnRadius, size.width  - magnRadius)
+            val magnCy = (touchPos.y - magnRadius - R * 0.08f)
+                .coerceIn(magnRadius, size.height - magnRadius)
+            val magnCenter = Offset(magnCx, magnCy)
+
+            val circlePath = Path().apply { addOval(Rect(magnCenter, magnRadius)) }
+
+            // Clipped zoomed view
+            clipPath(circlePath) {
+                // Board background fill (covers area outside the actual board)
+                drawCircle(ColBoardBg, magnRadius, magnCenter)
+                // Scale around touchPos so it stays fixed, then shift it to magnCenter.
+                // Result: every point P maps to magnCenter + (P - touchPos) * zoom
+                translate(magnCenter.x - touchPos.x, magnCenter.y - touchPos.y) {
+                    scale(zoomFactor, zoomFactor, pivot = touchPos) {
+                        drawBoard(center, R, textMeasurer)
+                        // Crosshair at exact touch position
+                        drawCircle(Color.Red,   markerRadius, touchPos)
+                        drawCircle(Color.White, markerRadius, touchPos,
+                                   style = Stroke(strokeWidth = 2f / zoomFactor))
+                    }
+                }
+            }
+
+            // Outer ring: thick white + thin dark outline (matches iOS magnifier look)
+            drawCircle(Color.White,           magnRadius + 1f, magnCenter, style = Stroke(7f))
+            drawCircle(Color(0xFF555555), magnRadius + 4f, magnCenter, style = Stroke(1.5f))
         }
     }
 }
