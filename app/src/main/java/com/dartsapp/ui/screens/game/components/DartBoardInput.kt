@@ -3,13 +3,14 @@ package com.dartsapp.ui.screens.game.components
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
+import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -18,6 +19,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
@@ -76,30 +80,63 @@ fun DartBoardInput(
 ) {
     val textMeasurer = rememberTextMeasurer()
 
-    // Normalised positions (tapX, tapY) of the last committed round, fading out
+    // Local tap positions – updated immediately in the tap handler so dart 3 is never
+    // lost when the ViewModel auto-commits the round in the same frame.
+    var livePositions  by remember { mutableStateOf<List<Pair<Float, Float>>>(emptyList()) }
     var ghostPositions by remember { mutableStateOf<List<Pair<Float, Float>>>(emptyList()) }
     val ghostAlpha     = remember { Animatable(0f) }
 
-    // Track the previous dart list so we can detect a round-clear transition
-    val prevDartsRef = remember { mutableStateOf(currentRoundDarts) }
+    // Set to true in the tap handler so the LaunchedEffect can distinguish a round
+    // commit (triggered by a tap) from an undo (triggered externally).
+    var justTapped by remember { mutableStateOf(false) }
+
+    // Current finger position while pressed – drives the magnifier overlay.
+    // Read here (composition scope) so Canvas redraws on every position update.
+    var magnifierPosition by remember { mutableStateOf<Offset?>(null) }
+    val currentMagnifierPos = magnifierPosition
+
+    // Magnifier delay: gesture handler writes holdStartMs (non-zero = pressed, 0 = released)
+    // and keeps positionHolder up to date. LaunchedEffect shows the magnifier after 500 ms
+    // without needing any suspend call inside the @RestrictsSuspension AwaitPointerEventScope.
+    var holdStartMs by remember { mutableStateOf(0L) }
+    val positionHolder = remember { object { var value: Offset = Offset.Zero } }
+
+    LaunchedEffect(holdStartMs) {
+        val epoch = holdStartMs
+        if (epoch == 0L) { magnifierPosition = null; return@LaunchedEffect }
+        delay(500)
+        if (holdStartMs == epoch) magnifierPosition = positionHolder.value
+    }
 
     LaunchedEffect(currentRoundDarts) {
-        val prev = prevDartsRef.value
-        prevDartsRef.value = currentRoundDarts
+        val wasTap = justTapped
+        justTapped = false
 
-        if (currentRoundDarts.isEmpty() && prev.isNotEmpty()) {
-            // Round was committed: fade out the previous markers
-            ghostPositions = prev.mapNotNull { d ->
-                val tx = d.tapX; val ty = d.tapY
-                if (tx != null && ty != null) tx to ty else null
+        when {
+            currentRoundDarts.isEmpty() && livePositions.isNotEmpty() && wasTap -> {
+                // Round committed via tap: hold markers for 1 s, then fade out
+                ghostPositions = livePositions
+                livePositions  = emptyList()
+                ghostAlpha.snapTo(1f)
+                delay(1000)
+                ghostAlpha.animateTo(0f, animationSpec = tween(durationMillis = 800))
+                ghostPositions = emptyList()
             }
-            ghostAlpha.snapTo(1f)
-            ghostAlpha.animateTo(0f, animationSpec = tween(durationMillis = 1000))
-            ghostPositions = emptyList()
-        } else {
-            // Dart added, removed (undo) or player switched: cancel any lingering ghost
-            ghostAlpha.snapTo(0f)
-            ghostPositions = emptyList()
+            currentRoundDarts.isNotEmpty() -> {
+                // Dart added, or undo/player-switch with darts remaining: sync immediately
+                livePositions = currentRoundDarts.mapNotNull { d ->
+                    val tx = d.tapX; val ty = d.tapY
+                    if (tx != null && ty != null) tx to ty else null
+                }
+                ghostAlpha.snapTo(0f)
+                ghostPositions = emptyList()
+            }
+            else -> {
+                // Undo of last dart, player switch, or round cleared externally
+                livePositions  = emptyList()
+                ghostAlpha.snapTo(0f)
+                ghostPositions = emptyList()
+            }
         }
     }
 
@@ -110,16 +147,42 @@ fun DartBoardInput(
     Canvas(
         modifier = modifier
             .pointerInput(Unit) {
-                detectTapGestures { offset ->
-                    val cx = size.width / 2f
-                    val cy = size.height / 2f
-                    val R  = size.width / 2f
-                    val dx = offset.x - cx
-                    val dy = offset.y - cy
-                    val rNorm = sqrt(dx * dx + dy * dy) / R
+                awaitEachGesture {
+                    val downEvent   = awaitPointerEvent()
+                    val firstChange = downEvent.changes.firstOrNull() ?: return@awaitEachGesture
+                    if (!firstChange.pressed) return@awaitEachGesture
+                    firstChange.consume()
+                    val downId   = firstChange.id
+                    var position = firstChange.position
 
-                    val nx = dx / R   // normalised coords: 0,0=centre, ±1=canvas edge
-                    val ny = dy / R
+                    // Signal the LaunchedEffect to start the 500 ms countdown.
+                    positionHolder.value = position
+                    holdStartMs = System.currentTimeMillis()
+
+                    // Track finger until lifted
+                    while (true) {
+                        val event  = awaitPointerEvent()
+                        val change = event.changes.firstOrNull { it.id == downId } ?: break
+                        if (!change.pressed) break
+                        position = change.position
+                        positionHolder.value = position
+                        // Once the magnifier is visible, keep its position in sync.
+                        if (magnifierPosition != null) magnifierPosition = position
+                        change.consume()
+                    }
+                    // Cancel the countdown and hide the magnifier.
+                    holdStartMs = 0L
+                    magnifierPosition = null
+
+                    // Dart calculation – same logic as before, using final release position
+                    val cx    = size.width  / 2f
+                    val cy    = size.height / 2f
+                    val R     = size.width  / 2f
+                    val dx    = position.x - cx
+                    val dy    = position.y - cy
+                    val rNorm = sqrt(dx * dx + dy * dy) / R
+                    val nx    = dx / R
+                    val ny    = dy / R
                     val input: DartInput = when {
                         rNorm < R_BULLSEYE   -> DartInput(50, ScoreMultiplier.SINGLE, 50, nx, ny)
                         rNorm < R_BULL       -> DartInput(25, ScoreMultiplier.SINGLE, 25, nx, ny)
@@ -137,6 +200,10 @@ fun DartBoardInput(
                             DartInput(field, mult, field * mult.value, nx, ny)
                         }
                     }
+                    // Capture position locally BEFORE onDartEntered so that dart 3 is
+                    // never lost when the ViewModel auto-commits the round in the same frame.
+                    justTapped    = true
+                    livePositions = livePositions + (nx to ny)
                     onDartEntered(input)
                 }
             }
@@ -150,14 +217,13 @@ fun DartBoardInput(
 
         val markerRadius = R * 0.02f
 
-        // Live markers – derived from the ViewModel state; always correct after undo/player switch
-        currentRoundDarts.forEach { dart ->
-            val tx = dart.tapX; val ty = dart.tapY
-            if (tx != null && ty != null) {
-                val pos = Offset(tx * R + cx, ty * R + cy)
-                drawCircle(color = Color.Red,   radius = markerRadius, center = pos)
-                drawCircle(color = Color.White, radius = markerRadius, center = pos, style = Stroke(2f))
-            }
+        // Live markers – from local state so dart 3 is visible even when the ViewModel
+        // auto-commits the round before the next frame (livePositions is synced back
+        // from currentRoundDarts on undo / player switch via the LaunchedEffect above).
+        livePositions.forEach { (nx, ny) ->
+            val pos = Offset(nx * R + cx, ny * R + cy)
+            drawCircle(color = Color.Red,   radius = markerRadius, center = pos)
+            drawCircle(color = Color.White, radius = markerRadius, center = pos, style = Stroke(2f))
         }
 
         // Ghost markers – previous round fading out
@@ -167,6 +233,41 @@ fun DartBoardInput(
                 drawCircle(color = Color.Red.copy(alpha = ghostA),   radius = markerRadius, center = pos)
                 drawCircle(color = Color.White.copy(alpha = ghostA), radius = markerRadius, center = pos, style = Stroke(2f))
             }
+        }
+
+        // Magnifier – shown while the finger is held down
+        currentMagnifierPos?.let { touchPos ->
+            val magnRadius = R * 0.28f
+            val zoomFactor = 3f
+
+            // Position above the finger; clamp so the circle stays within the canvas
+            val magnCx = touchPos.x.coerceIn(magnRadius, size.width  - magnRadius)
+            val magnCy = (touchPos.y - magnRadius - R * 0.08f)
+                .coerceIn(magnRadius, size.height - magnRadius)
+            val magnCenter = Offset(magnCx, magnCy)
+
+            val circlePath = Path().apply { addOval(Rect(magnCenter, magnRadius)) }
+
+            // Clipped zoomed view
+            clipPath(circlePath) {
+                // Board background fill (covers area outside the actual board)
+                drawCircle(ColBoardBg, magnRadius, magnCenter)
+                // Scale around touchPos so it stays fixed, then shift it to magnCenter.
+                // Result: every point P maps to magnCenter + (P - touchPos) * zoom
+                translate(magnCenter.x - touchPos.x, magnCenter.y - touchPos.y) {
+                    scale(zoomFactor, zoomFactor, pivot = touchPos) {
+                        drawBoard(center, R, textMeasurer)
+                        // Crosshair at exact touch position
+                        drawCircle(Color.Red,   markerRadius, touchPos)
+                        drawCircle(Color.White, markerRadius, touchPos,
+                                   style = Stroke(2f / zoomFactor))
+                    }
+                }
+            }
+
+            // Outer ring: thick white + thin dark outline (matches iOS magnifier look)
+            drawCircle(Color.White,           magnRadius + 1f, magnCenter, style = Stroke(7f))
+            drawCircle(Color(0xFF555555), magnRadius + 4f, magnCenter, style = Stroke(1.5f))
         }
     }
 }
@@ -188,7 +289,7 @@ private fun DrawScope.drawBoard(center: Offset, R: Float, textMeasurer: androidx
         val startAngle = -90f + i * 18f - 9f
         val sweep      = 18f
         val isEven     = (i % 2 == 0)
-        val colSingle  = if (isEven) ColCream else ColBlack
+        val colSingle  = if (isEven) ColBlack else ColCream
         val colScore   = if (isEven) ColRed   else ColGreen
 
         drawAnnularSector(center, R * R_TRIPLE_IN,  R * R_BULL,       startAngle, sweep, colSingle)

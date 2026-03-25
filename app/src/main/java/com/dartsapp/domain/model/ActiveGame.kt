@@ -17,7 +17,9 @@ data class ActivePlayer(
     val remainingScore: Int,
     val currentRoundDarts: List<DartInput> = emptyList(),
     val scoreBeforeRound: Int = 0,
-    val placement: Int? = null
+    val placement: Int? = null,
+    /** Darts of the last completed round – shown on the card until the player throws again. */
+    val lastRoundDarts: List<DartInput> = emptyList()
 )
 
 enum class GameStatus { IN_PROGRESS, FINISHED }

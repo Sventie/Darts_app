@@ -23,4 +23,7 @@ interface GameDao {
 
     @Query("UPDATE games SET finished_at = :finishedAt, winner_player_id = :winnerPlayerId WHERE id = :gameId")
     suspend fun finishGame(gameId: Long, finishedAt: Long, winnerPlayerId: Long)
+
+    @Query("UPDATE games SET finished_at = NULL, winner_player_id = NULL WHERE id = :gameId")
+    suspend fun unfinishGame(gameId: Long)
 }
