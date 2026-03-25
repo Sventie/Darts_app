@@ -37,7 +37,11 @@ data class LastCommittedRound(
     val playerIndex: Int,
     val scoreBeforeRound: Int,
     val darts: List<DartInput>,
-    val roundNumber: Int
+    val roundNumber: Int,
+    /** True when this round was a winning (checkout) round. */
+    val wasWin: Boolean = false,
+    /** The placement that was assigned on checkout (only relevant when wasWin = true). */
+    val placement: Int? = null
 )
 
 sealed class GameUiState {
@@ -148,7 +152,8 @@ class GameViewModel @Inject constructor(
             currentPlayerIndex = nextIdx,
             roundNumber = if (newRound) game.roundNumber + 1 else game.roundNumber
         )
-        _uiState.value = buildPlayingState(updatedGame, emptyList(), null)
+        // Preserve lastCommittedRound so undo still works after the placement dialog is dismissed
+        _uiState.value = buildPlayingState(updatedGame, emptyList(), state.lastCommittedRound)
     }
 
     /** User chose to end the game from the placement dialog. */
@@ -192,17 +197,29 @@ class GameViewModel @Inject constructor(
     private suspend fun undoLastCommittedRound(state: GameUiState.Playing) {
         val last = state.lastCommittedRound ?: return
 
-        // Revert DB: delete round (CASCADE removes dart_throws) and restore score
-        gameRepository.undoRound(last.roundId, last.participantId, last.scoreBeforeRound)
+        if (last.wasWin) {
+            // Revert checkout: delete round, restore score, clear placement (and game-finish if #1)
+            gameRepository.undoWinRound(
+                roundId = last.roundId,
+                participantId = last.participantId,
+                scoreBefore = last.scoreBeforeRound,
+                gameId = state.activeGame.gameId,
+                wasFirstPlace = last.placement == 1
+            )
+        } else {
+            // Revert DB: delete round (CASCADE removes dart_throws) and restore score
+            gameRepository.undoRound(last.roundId, last.participantId, last.scoreBeforeRound)
+        }
 
-        // Restore the player's score in the in-memory game state
+        // Restore the player's score (and placement if it was a checkout) in memory
         val activeGame = state.activeGame
         val restoredPlayers = activeGame.players.mapIndexed { idx, player ->
             if (idx == last.playerIndex) {
                 player.copy(
                     remainingScore = last.scoreBeforeRound,
                     scoreBeforeRound = last.scoreBeforeRound,
-                    currentRoundDarts = emptyList()
+                    currentRoundDarts = emptyList(),
+                    placement = if (last.wasWin) null else player.placement
                 )
             } else player
         }
@@ -247,6 +264,18 @@ class GameViewModel @Inject constructor(
             }
             gameRepository.updatePlacement(currentPlayer.participantId, placement)
 
+            // Capture the winning round for cross-turn undo (wasWin = true)
+            val committed = LastCommittedRound(
+                roundId = result.roundId,
+                participantId = currentPlayer.participantId,
+                playerIndex = activeGame.currentPlayerIndex,
+                scoreBeforeRound = currentPlayer.scoreBeforeRound,
+                darts = darts,
+                roundNumber = activeGame.roundNumber,
+                wasWin = true,
+                placement = placement
+            )
+
             val finishedPlayer = currentPlayer.copy(
                 remainingScore = 0,
                 currentRoundDarts = emptyList(),
@@ -259,7 +288,7 @@ class GameViewModel @Inject constructor(
             val allDone = updatedPlayers.all { it.placement != null }
             val updatedGame = activeGame.copy(players = updatedPlayers)
 
-            _uiState.value = buildPlayingState(updatedGame, emptyList(), null).copy(
+            _uiState.value = buildPlayingState(updatedGame, emptyList(), committed).copy(
                 playerJustFinished = finishedPlayer,
                 allPlayersFinished = allDone
             )

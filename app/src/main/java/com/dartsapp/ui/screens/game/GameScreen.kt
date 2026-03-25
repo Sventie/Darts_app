@@ -88,7 +88,8 @@ fun GameScreen(
                 allPlayers         = playing.activeGame.players,
                 canContinue        = !playing.allPlayersFinished,
                 onContinue         = viewModel::continueAfterPlacement,
-                onEndGame          = viewModel::endGame
+                onEndGame          = viewModel::endGame,
+                onUndo             = viewModel::onUndoLastDart
             )
         }
     }

@@ -35,4 +35,19 @@ class GameRepository @Inject constructor(
         roundDao.deleteById(roundId)
         gameParticipantDao.updateFinalScore(participantId, scoreBefore)
     }
+
+    suspend fun undoWinRound(
+        roundId: Long,
+        participantId: Long,
+        scoreBefore: Int,
+        gameId: Long,
+        wasFirstPlace: Boolean
+    ) {
+        roundDao.deleteById(roundId)
+        gameParticipantDao.updateFinalScore(participantId, scoreBefore)
+        gameParticipantDao.clearPlacement(participantId)
+        if (wasFirstPlace) {
+            gameDao.unfinishGame(gameId)
+        }
+    }
 }
