@@ -33,8 +33,8 @@ import kotlin.math.sin
 private val BOARD_NUMBERS      = listOf(20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5)
 private const val R_BULLSEYE       = 0.054f
 private const val R_BULL           = 0.134f
-private const val R_TRIPLE_IN      = 0.375f
-private const val R_TRIPLE_OUT     = 0.483f
+private const val R_TRIPLE_IN      = 0.429f
+private const val R_TRIPLE_OUT     = 0.537f
 private const val R_DOUBLE_IN      = 0.760f
 private const val R_DOUBLE_OUT     = 0.894f
 private const val R_DOUBLE_OUT_SQ  = R_DOUBLE_OUT * R_DOUBLE_OUT
