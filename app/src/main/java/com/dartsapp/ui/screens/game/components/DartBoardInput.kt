@@ -9,7 +9,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -133,32 +136,35 @@ fun DartBoardInput(
     Canvas(
         modifier = modifier
             .pointerInput(Unit) {
-                while (true) {
-                    // Wait for a finger down event
+                awaitEachGesture {
                     val downEvent   = awaitPointerEvent()
-                    val firstChange = downEvent.changes.firstOrNull() ?: continue
-                    if (!firstChange.pressed) continue
+                    val firstChange = downEvent.changes.firstOrNull() ?: return@awaitEachGesture
+                    if (!firstChange.pressed) return@awaitEachGesture
                     firstChange.consume()
                     val downId   = firstChange.id
                     var position = firstChange.position
 
-                    // Show magnifier only after 500 ms of holding
-                    val magnifierJob = launch {
-                        delay(500)
-                        magnifierPosition = position
-                    }
+                    // Show magnifier only after 500 ms of holding; coroutineScope gives
+                    // us a CoroutineScope for launch while keeping AwaitPointerEventScope
+                    // in scope for awaitPointerEvent calls below.
+                    coroutineScope {
+                        val magnifierJob = launch {
+                            delay(500)
+                            magnifierPosition = position
+                        }
 
-                    // Track finger until lifted
-                    while (true) {
-                        val event  = awaitPointerEvent()
-                        val change = event.changes.firstOrNull { it.id == downId } ?: break
-                        if (!change.pressed) break
-                        position = change.position
-                        if (magnifierJob.isCompleted) magnifierPosition = position
-                        change.consume()
+                        // Track finger until lifted
+                        while (true) {
+                            val event  = awaitPointerEvent()
+                            val change = event.changes.firstOrNull { it.id == downId } ?: break
+                            if (!change.pressed) break
+                            position = change.position
+                            if (magnifierJob.isCompleted) magnifierPosition = position
+                            change.consume()
+                        }
+                        magnifierJob.cancel()
+                        magnifierPosition = null
                     }
-                    magnifierJob.cancel()
-                    magnifierPosition = null
 
                     // Dart calculation – same logic as before, using final release position
                     val cx    = size.width  / 2f
