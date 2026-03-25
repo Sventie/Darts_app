@@ -63,14 +63,14 @@ sealed class ModeState {
         val totalDarts: Int,
         val completedNumbers: List<Int>,
         val difficulty: TrainingDifficulty,
-        val lastDart: DartInput? = null,
+        /** Full throw history – the last entry is shown as the board marker. */
+        val dartHistory: List<DartInput> = emptyList(),
         /** dartsOnCurrentNumber value before the last hit – used to restore on undo. */
-        val prevDartsOnNumber: Int = 0,
-        /** The dart thrown before lastDart – restored as the visible marker on undo. */
-        val prevDart: DartInput? = null
+        val prevDartsOnNumber: Int = 0
     ) : ModeState() {
         val requiresDoubleForCurrent: Boolean
             get() = requiresDouble(currentNumber, difficulty)
+        val lastDart: DartInput? get() = dartHistory.lastOrNull()
     }
 
     data class ScoringRounds(
@@ -262,8 +262,7 @@ class TrainingViewModel @Inject constructor(
                     dartsOnCurrentNumber = state.prevDartsOnNumber,
                     totalDarts = state.totalDarts - 1,
                     completedNumbers = state.completedNumbers.dropLast(1),
-                    lastDart = state.prevDart,
-                    prevDart = null,
+                    dartHistory = state.dartHistory.dropLast(1),
                     prevDartsOnNumber = 0
                 )
             )
@@ -273,8 +272,7 @@ class TrainingViewModel @Inject constructor(
                 state.copy(
                     dartsOnCurrentNumber = state.dartsOnCurrentNumber - 1,
                     totalDarts = state.totalDarts - 1,
-                    lastDart = state.prevDart,
-                    prevDart = null
+                    dartHistory = state.dartHistory.dropLast(1)
                 )
             )
         }
@@ -296,8 +294,7 @@ class TrainingViewModel @Inject constructor(
                         dartsOnCurrentNumber = 0,
                         totalDarts = newTotal,
                         completedNumbers = newCompleted,
-                        prevDart = state.lastDart,
-                        lastDart = dart,
+                        dartHistory = state.dartHistory + dart,
                         prevDartsOnNumber = state.dartsOnCurrentNumber
                     )
                 )
@@ -307,8 +304,7 @@ class TrainingViewModel @Inject constructor(
                 state.copy(
                     dartsOnCurrentNumber = state.dartsOnCurrentNumber + 1,
                     totalDarts = newTotal,
-                    prevDart = state.lastDart,
-                    lastDart = dart
+                    dartHistory = state.dartHistory + dart
                 )
             )
         }
