@@ -17,7 +17,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -35,8 +34,7 @@ fun GameOverDialog(
     allPlayers: List<ActivePlayer>,
     canContinue: Boolean,
     onContinue: () -> Unit,
-    onEndGame: () -> Unit,
-    onUndo: () -> Unit
+    onEndGame: () -> Unit
 ) {
     // Finished players sorted by placement, then active players by remaining score
     val sortedPlayers = remember(allPlayers) {
@@ -112,13 +110,6 @@ fun GameOverDialog(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Spiel beenden")
-                }
-                Spacer(modifier = Modifier.height(4.dp))
-                TextButton(
-                    onClick = onUndo,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Wurf rückgängig machen")
                 }
             }
         }
