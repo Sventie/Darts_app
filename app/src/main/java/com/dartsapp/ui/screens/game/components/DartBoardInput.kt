@@ -83,10 +83,17 @@ fun DartBoardInput(
     var ghostPositions by remember { mutableStateOf<List<Pair<Float, Float>>>(emptyList()) }
     val ghostAlpha     = remember { Animatable(0f) }
 
+    // Set to true in the tap handler so the LaunchedEffect can distinguish a round
+    // commit (triggered by a tap) from an undo (triggered externally).
+    var justTapped by remember { mutableStateOf(false) }
+
     LaunchedEffect(currentRoundDarts) {
+        val wasTap = justTapped
+        justTapped = false
+
         when {
-            currentRoundDarts.isEmpty() && livePositions.isNotEmpty() -> {
-                // Round committed: hold markers for 1 s, then fade out
+            currentRoundDarts.isEmpty() && livePositions.isNotEmpty() && wasTap -> {
+                // Round committed via tap: hold markers for 1 s, then fade out
                 ghostPositions = livePositions
                 livePositions  = emptyList()
                 ghostAlpha.snapTo(1f)
@@ -95,7 +102,7 @@ fun DartBoardInput(
                 ghostPositions = emptyList()
             }
             currentRoundDarts.isNotEmpty() -> {
-                // Sync with VM state so undo / player-switch are reflected correctly
+                // Dart added, or undo/player-switch with darts remaining: sync immediately
                 livePositions = currentRoundDarts.mapNotNull { d ->
                     val tx = d.tapX; val ty = d.tapY
                     if (tx != null && ty != null) tx to ty else null
@@ -104,7 +111,7 @@ fun DartBoardInput(
                 ghostPositions = emptyList()
             }
             else -> {
-                // Both empty (new round / player switch while empty)
+                // Undo of last dart, player switch, or round cleared externally
                 livePositions  = emptyList()
                 ghostAlpha.snapTo(0f)
                 ghostPositions = emptyList()
@@ -148,6 +155,7 @@ fun DartBoardInput(
                     }
                     // Capture position locally BEFORE onDartEntered so that dart 3 is
                     // never lost when the ViewModel auto-commits the round in the same frame.
+                    justTapped    = true
                     livePositions = livePositions + (nx to ny)
                     onDartEntered(input)
                 }
