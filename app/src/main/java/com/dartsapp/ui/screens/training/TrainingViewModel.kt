@@ -49,7 +49,9 @@ sealed class ModeState {
         val currentFieldIndex: Int,
         val throwsForCurrentField: List<String>,
         val completedFields: List<Pair<String, Int>>, // field to dart count
-        val throwDartsForCurrentField: List<DartInput> = emptyList()
+        val throwDartsForCurrentField: List<DartInput> = emptyList(),
+        /** Darts thrown for the last completed field (incl. the hit dart) – used for undo. */
+        val lastCompletedFieldDarts: List<DartInput> = emptyList()
     ) : ModeState() {
         val currentField: String get() = targetFields[currentFieldIndex]
         val totalDartsSoFar: Int get() = completedFields.sumOf { it.second } + throwsForCurrentField.size
@@ -61,7 +63,9 @@ sealed class ModeState {
         val totalDarts: Int,
         val completedNumbers: List<Int>,
         val difficulty: TrainingDifficulty,
-        val lastDart: DartInput? = null
+        val lastDart: DartInput? = null,
+        /** dartsOnCurrentNumber value before the last hit – used to restore on undo. */
+        val prevDartsOnNumber: Int = 0
     ) : ModeState() {
         val requiresDoubleForCurrent: Boolean
             get() = requiresDouble(currentNumber, difficulty)
@@ -71,7 +75,9 @@ sealed class ModeState {
         val currentRound: Int,
         val roundScores: List<Int>,
         val pendingDarts: List<DartInput>,
-        val targetAverage: Int
+        val targetAverage: Int,
+        /** Darts of the last committed round – used to undo after auto-commit. */
+        val lastRoundDarts: List<DartInput> = emptyList()
     ) : ModeState() {
         val totalRounds: Int get() = 10
         val runningAverage: Double
@@ -159,13 +165,27 @@ class TrainingViewModel @Inject constructor(
     fun undoZielfeldThrow() {
         val state = (_uiState.value as? TrainingUiState.Running)?.modeState as? ModeState.Zielfeld
             ?: return
-        if (state.throwsForCurrentField.isEmpty()) return
-        _uiState.value = TrainingUiState.Running(
-            state.copy(
-                throwsForCurrentField = state.throwsForCurrentField.dropLast(1),
-                throwDartsForCurrentField = state.throwDartsForCurrentField.dropLast(1)
+        if (state.throwsForCurrentField.isNotEmpty()) {
+            // Regular in-field undo
+            _uiState.value = TrainingUiState.Running(
+                state.copy(
+                    throwsForCurrentField = state.throwsForCurrentField.dropLast(1),
+                    throwDartsForCurrentField = state.throwDartsForCurrentField.dropLast(1)
+                )
             )
-        )
+        } else if (state.lastCompletedFieldDarts.isNotEmpty()) {
+            // Undo the hit that completed the previous field
+            val prev = state.lastCompletedFieldDarts
+            _uiState.value = TrainingUiState.Running(
+                state.copy(
+                    currentFieldIndex = state.currentFieldIndex - 1,
+                    throwsForCurrentField = prev.dropLast(1).map { it.toZielfeldField() },
+                    throwDartsForCurrentField = prev.dropLast(1),
+                    completedFields = state.completedFields.dropLast(1),
+                    lastCompletedFieldDarts = emptyList()
+                )
+            )
+        }
     }
 
     private fun recordZielfeldThrow(dart: DartInput, thrownField: String) {
@@ -184,7 +204,8 @@ class TrainingViewModel @Inject constructor(
                         currentFieldIndex = nextIndex,
                         throwsForCurrentField = emptyList(),
                         throwDartsForCurrentField = emptyList(),
-                        completedFields = newCompleted
+                        completedFields = newCompleted,
+                        lastCompletedFieldDarts = newDarts
                     )
                 )
             }
@@ -227,6 +248,34 @@ class TrainingViewModel @Inject constructor(
         recordAtcThrow(dart, isHit)
     }
 
+    fun undoAtcDart() {
+        val state = (_uiState.value as? TrainingUiState.Running)?.modeState as? ModeState.AroundTheClock
+            ?: return
+        if (state.totalDarts == 0) return
+        if (state.dartsOnCurrentNumber == 0 && state.completedNumbers.isNotEmpty()) {
+            // Last dart was a hit → restore previous number
+            _uiState.value = TrainingUiState.Running(
+                state.copy(
+                    currentNumber = state.completedNumbers.last(),
+                    dartsOnCurrentNumber = state.prevDartsOnNumber,
+                    totalDarts = state.totalDarts - 1,
+                    completedNumbers = state.completedNumbers.dropLast(1),
+                    lastDart = null,
+                    prevDartsOnNumber = 0
+                )
+            )
+        } else {
+            // Last dart was a miss
+            _uiState.value = TrainingUiState.Running(
+                state.copy(
+                    dartsOnCurrentNumber = state.dartsOnCurrentNumber - 1,
+                    totalDarts = state.totalDarts - 1,
+                    lastDart = null
+                )
+            )
+        }
+    }
+
     private fun recordAtcThrow(dart: DartInput, isHit: Boolean) {
         val state = (_uiState.value as? TrainingUiState.Running)?.modeState as? ModeState.AroundTheClock
             ?: return
@@ -243,7 +292,8 @@ class TrainingViewModel @Inject constructor(
                         dartsOnCurrentNumber = 0,
                         totalDarts = newTotal,
                         completedNumbers = newCompleted,
-                        lastDart = dart
+                        lastDart = dart,
+                        prevDartsOnNumber = state.dartsOnCurrentNumber
                     )
                 )
             }
@@ -275,7 +325,8 @@ class TrainingViewModel @Inject constructor(
                     state.copy(
                         currentRound = state.currentRound + 1,
                         roundScores = newScores,
-                        pendingDarts = emptyList()
+                        pendingDarts = emptyList(),
+                        lastRoundDarts = newPendingDarts
                     )
                 )
             }
@@ -287,10 +338,21 @@ class TrainingViewModel @Inject constructor(
     fun undoScoringDart() {
         val state = (_uiState.value as? TrainingUiState.Running)?.modeState as? ModeState.ScoringRounds
             ?: return
-        if (state.pendingDarts.isEmpty()) return
-        _uiState.value = TrainingUiState.Running(
-            state.copy(pendingDarts = state.pendingDarts.dropLast(1))
-        )
+        if (state.pendingDarts.isNotEmpty()) {
+            _uiState.value = TrainingUiState.Running(
+                state.copy(pendingDarts = state.pendingDarts.dropLast(1))
+            )
+        } else if (state.roundScores.isNotEmpty() && state.lastRoundDarts.isNotEmpty()) {
+            // Undo the last auto-committed round (3rd dart triggered commit)
+            _uiState.value = TrainingUiState.Running(
+                state.copy(
+                    currentRound = state.currentRound - 1,
+                    roundScores = state.roundScores.dropLast(1),
+                    pendingDarts = state.lastRoundDarts.dropLast(1),
+                    lastRoundDarts = emptyList()
+                )
+            )
+        }
     }
 
     // ── Common ────────────────────────────────────────────────────────────────

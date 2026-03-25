@@ -104,18 +104,23 @@ fun TrainingScreen(
                                 state = modeState,
                                 isLandscape = isLandscape,
                                 onDartEntered = { viewModel.recordZielfeldDart(it) },
-                                canUndo = modeState.throwsForCurrentField.isNotEmpty(),
+                                canUndo = modeState.throwsForCurrentField.isNotEmpty()
+                                       || modeState.lastCompletedFieldDarts.isNotEmpty(),
                                 onUndo = { viewModel.undoZielfeldThrow() }
                             )
                             is ModeState.AroundTheClock -> AroundTheClockContent(
                                 state = modeState,
                                 isLandscape = isLandscape,
-                                onDartEntered = { viewModel.recordAtcDart(it) }
+                                onDartEntered = { viewModel.recordAtcDart(it) },
+                                canUndo = modeState.totalDarts > 0,
+                                onUndo = { viewModel.undoAtcDart() }
                             )
                             is ModeState.ScoringRounds -> ScoringRoundsContent(
                                 state = modeState,
                                 isLandscape = isLandscape,
                                 onDartEntered = { viewModel.recordScoringDart(it) },
+                                canUndo = modeState.pendingDarts.isNotEmpty()
+                                       || (modeState.roundScores.isNotEmpty() && modeState.lastRoundDarts.isNotEmpty()),
                                 onUndo = { viewModel.undoScoringDart() }
                             )
                         }
@@ -246,7 +251,9 @@ private fun ZielfeldInfoPanel(state: ModeState.Zielfeld, progress: String) {
 private fun AroundTheClockContent(
     state: ModeState.AroundTheClock,
     isLandscape: Boolean,
-    onDartEntered: (DartInput) -> Unit
+    onDartEntered: (DartInput) -> Unit,
+    canUndo: Boolean,
+    onUndo: () -> Unit
 ) {
     val lastDartAsList = listOfNotNull(state.lastDart)
 
@@ -255,8 +262,8 @@ private fun AroundTheClockContent(
             ScoreInputKeypad(
                 currentRoundDarts = lastDartAsList,
                 onDartEntered = onDartEntered,
-                onUndo = {},
-                canUndo = false,
+                onUndo = onUndo,
+                canUndo = canUndo,
                 modifier = Modifier.fillMaxHeight().weight(0.58f)
             )
             VerticalDivider(modifier = Modifier.fillMaxHeight().padding(vertical = 8.dp))
@@ -288,8 +295,8 @@ private fun AroundTheClockContent(
             ScoreInputKeypad(
                 currentRoundDarts = lastDartAsList,
                 onDartEntered = onDartEntered,
-                onUndo = {},
-                canUndo = false,
+                onUndo = onUndo,
+                canUndo = canUndo,
                 modifier = Modifier.fillMaxWidth().weight(0.6f)
             )
         }
@@ -396,6 +403,7 @@ private fun ScoringRoundsContent(
     state: ModeState.ScoringRounds,
     isLandscape: Boolean,
     onDartEntered: (DartInput) -> Unit,
+    canUndo: Boolean,
     onUndo: () -> Unit
 ) {
     if (isLandscape) {
@@ -404,7 +412,7 @@ private fun ScoringRoundsContent(
                 currentRoundDarts = state.pendingDarts,
                 onDartEntered = onDartEntered,
                 onUndo = onUndo,
-                canUndo = state.pendingDarts.isNotEmpty(),
+                canUndo = canUndo,
                 modifier = Modifier.fillMaxHeight().weight(0.58f)
             )
             VerticalDivider(modifier = Modifier.fillMaxHeight().padding(vertical = 8.dp))
@@ -435,7 +443,7 @@ private fun ScoringRoundsContent(
                 currentRoundDarts = state.pendingDarts,
                 onDartEntered = onDartEntered,
                 onUndo = onUndo,
-                canUndo = state.pendingDarts.isNotEmpty(),
+                canUndo = canUndo,
                 modifier = Modifier.fillMaxWidth().weight(0.6f)
             )
         }
